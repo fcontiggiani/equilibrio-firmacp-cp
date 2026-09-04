@@ -2,9 +2,17 @@
 
 Simulador interactivo, en HTML/JavaScript autocontenido, para la derivación gráfica y numérica de las curvas de costo de corto plazo de una firma a partir de distintas funciones de producción, y para el análisis de su decisión de oferta como tomadora de precios dentro de un mercado de competencia perfecta. Desarrollado como material didáctico para un curso de Microeconomía Intermedia de nivel universitario.
 
-## Contenido
-
-El archivo `costos_cortoplazo_standalone.html` contiene la totalidad del simulador: marcado, estilos y lógica en un único documento, sin dependencias externas más allá de la tipografía del sistema. No requiere proceso de compilación ni instalación de paquetes: basta con abrirlo en cualquier navegador moderno con JavaScript habilitado.
+**[▶ Abrir el simulador](https://fcontiggiani.github.io/equilibrio-firmacp-cp/costos_cortoplazo_standalone.html)**
+ 
+![Captura de pantalla del simulador: costos medios y marginales de la firma, equilibrio de mercado y curva de beneficios](screenshot.png)
+ 
+## Contenido del repositorio
+ 
+| Archivo | Descripción |
+|---|---|
+| `costos_cortoplazo_standalone.html` | El simulador completo: marcado, estilos y lógica en un único documento, sin dependencias externas más allá de la tipografía del sistema. No requiere proceso de compilación ni instalación de paquetes: basta con abrirlo en cualquier navegador moderno con JavaScript habilitado. |
+| `screenshot.png` | Captura de pantalla del simulador, utilizada como vista previa en este documento. |
+| `README.md` | Este documento. |
 
 ## Modelo económico
 
