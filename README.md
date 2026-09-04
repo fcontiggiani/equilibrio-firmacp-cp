@@ -1,14 +1,10 @@
 # Simulador de costos de corto plazo y equilibrio competitivo
 
-![Captura de pantalla del simulador: costos medios y marginales de la firma, equilibrio de mercado y curva de beneficios](screenshot.png)
-
 Simulador interactivo, en HTML/JavaScript autocontenido, para la derivación gráfica y numérica de las curvas de costo de corto plazo de una firma a partir de distintas funciones de producción, y para el análisis de su decisión de oferta como tomadora de precios dentro de un mercado de competencia perfecta. Desarrollado como material didáctico para un curso de Microeconomía Intermedia de nivel universitario (Bloque 2 — Teoría de la producción y costos).
 
-**Acceso directo (una vez publicado, ver más abajo):**
+**[▶ Abrir el simulador](https://fcontiggiani.github.io/equilibrio-firmacp-cp/costos_cortoplazo_standalone.html)**
 
-```
-https://fcontiggiani.github.io/equilibrio-firmacp-cp/costos_cortoplazo_standalone.html
-```
+![Captura de pantalla del simulador: costos medios y marginales de la firma, equilibrio de mercado y curva de beneficios](screenshot.png)
 
 ## Contenido del repositorio
 
@@ -51,33 +47,6 @@ Ambos mecanismos incluyen paneles de notas que cuantifican las diferencias (ΔQ*
 ## Uso local
 
 Clonar o descargar este repositorio y abrir `costos_cortoplazo_standalone.html` directamente en el navegador. No se requiere servidor ni conexión a internet una vez descargado el archivo.
-
-## Publicación en GitHub Pages
-
-Este repositorio ya está preparado para publicarse mediante GitHub Pages:
-
-1. En este repositorio, ir a **Settings → Pages**.
-2. En **Build and deployment → Source**, seleccionar **Deploy from a branch**.
-3. Elegir la rama `main` y la carpeta `/ (root)`, y hacer clic en **Save**.
-4. Aguardar entre uno y diez minutos. El simulador quedará disponible en:
-
-   ```
-   https://fcontiggiani.github.io/equilibrio-firmacp-cp/costos_cortoplazo_standalone.html
-   ```
-
-Toda actualización posterior del archivo (nueva versión subida al repositorio) se refleja automáticamente en esa misma dirección, sin necesidad de modificar los enlaces ya distribuidos (por ejemplo, en Moodle).
-
-### Integración en Moodle
-
-El enlace anterior puede incorporarse a un curso de Moodle como recurso de tipo **URL** (opción recomendada por su fiabilidad, independiente de la configuración de seguridad del entorno) o incrustarse mediante un `<iframe>` dentro de una Etiqueta o Página del curso:
-
-```html
-<iframe src="https://fcontiggiani.github.io/equilibrio-firmacp-cp/costos_cortoplazo_standalone.html"
-        width="100%" height="900" style="border:none;">
-</iframe>
-```
-
-Si la instalación institucional de Moodle elimina el `<iframe>` al guardar (por no tener habilitada la confianza en contenido enriquecido), se recomienda utilizar directamente el recurso de tipo URL.
 
 ## Licencia y uso
 
