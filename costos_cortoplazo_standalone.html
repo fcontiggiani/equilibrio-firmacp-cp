@@ -19,6 +19,7 @@
 
     --c-ac:      #2a78d6;   /* CMe */
     --c-avc:     #1baf7a;   /* CVMe */
+    --c-afc:     #e87ba4;   /* CFMe */
     --c-mc:      #eb6834;   /* CMg */
     --c-price:   #4a3aa7;   /* precio de mercado / equilibrio */
     --c-demand:  #2a78d6;   /* demanda */
@@ -28,8 +29,8 @@
     --c-ref:     #eda100;   /* curvas / línea de referencia fijada (K₀, P₀) */
 
     /* áreas sombreadas (fondo del gráfico + transparencia) */
-    --fill-tc:          rgba(11,11,11,0.10);
-    --fill-tr:           rgba(74,58,167,0.16);
+    --fill-tc:          rgba(200,50,45,0.16);  /* costo total: rojizo, para diferenciarse con claridad del ingreso total (violeta) */
+    --fill-tr:           rgba(74,58,167,0.16);  /* ingreso total: violeta, en línea con la recta P* que lo delimita */
     --fill-profit-strong: rgba(0,131,0,0.30);
     --fill-loss-strong:   rgba(227,73,72,0.30);
     --fill-profit-soft:   rgba(0,131,0,0.16);
@@ -52,6 +53,7 @@
 
       --c-ac:      #3987e5;
       --c-avc:     #199e70;
+      --c-afc:     #d55181;
       --c-mc:      #d95926;
       --c-price:   #9085e9;
       --c-demand:  #3987e5;
@@ -60,7 +62,7 @@
       --c-loss:    #e66767;
       --c-ref:     #c98500;
 
-      --fill-tc:            rgba(255,255,255,0.14);
+      --fill-tc:            rgba(214,80,70,0.24);
       --fill-tr:            rgba(144,133,233,0.24);
       --fill-profit-strong: rgba(12,163,12,0.32);
       --fill-loss-strong:   rgba(230,103,103,0.34);
@@ -84,6 +86,7 @@
 
     --c-ac:      #3987e5;
     --c-avc:     #199e70;
+    --c-afc:     #d55181;
     --c-mc:      #d95926;
     --c-price:   #9085e9;
     --c-demand:  #3987e5;
@@ -92,7 +95,7 @@
     --c-loss:    #e66767;
     --c-ref:     #c98500;
 
-    --fill-tc:            rgba(255,255,255,0.14);
+    --fill-tc:            rgba(214,80,70,0.24);
     --fill-tr:            rgba(144,133,233,0.24);
     --fill-profit-strong: rgba(12,163,12,0.32);
     --fill-loss-strong:   rgba(230,103,103,0.34);
@@ -158,7 +161,7 @@
 
   .panel h2{font-size:15px;margin:0 0 2px;}
   .panel p.hint{margin:0 0 10px;}
-  canvas{display:block;width:100%;height:auto;background:var(--surface-1);border-radius:8px;}
+  canvas{display:block;width:100%;height:auto;background:var(--surface-1);border-radius:8px;touch-action:none;}
 
   .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
   .panel-head h2{flex:1 1 auto;min-width:180px;}
@@ -216,6 +219,14 @@
   button.pin-btn:hover{background:var(--surface-2);}
   button.pin-btn.active{background:var(--c-ref);color:var(--surface-1);}
   .ref-hint{font-size:12px;color:var(--text-muted);margin-top:6px;}
+
+  /* Selector de curvas visibles en el panel de costos: permite tildar
+     cuáles de las curvas de costo medio y marginal de corto plazo se
+     desean mostrar u ocultar, sin alterar los datos subyacentes. */
+  .curve-toggles{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:10px;font-size:12.5px;}
+  .curve-toggles label{display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--text-secondary);user-select:none;}
+  .curve-toggles input[type="checkbox"]{margin:0;accent-color:var(--text-primary);cursor:pointer;}
+  .curve-toggles .dot{width:11px;height:11px;border-radius:50%;flex:none;}
 </style>
 </head>
 <body>
@@ -319,12 +330,15 @@
           <button type="button" class="reset-zoom" data-zoom-reset title="Ajuste automático">Ajustar</button>
         </div>
       </div>
-      <p class="hint">CMe, CVMe y CMg en el corto plazo, con el precio de mercado proyectado como recta horizontal.</p>
+      <p class="hint">Costo medio, costo variable medio, costo fijo medio y costo marginal de corto plazo, con el precio de mercado proyectado como recta horizontal. Tildar o destildar cada curva en el selector para mostrarla u ocultarla.</p>
+      <div class="curve-toggles" id="curveToggles">
+        <label><input type="checkbox" id="showAC" checked><span class="dot" style="background:var(--c-ac)"></span>Costo medio (CMe)</label>
+        <label><input type="checkbox" id="showAVC" checked><span class="dot" style="background:var(--c-avc)"></span>Costo variable medio (CVMe)</label>
+        <label><input type="checkbox" id="showAFC" checked><span class="dot" style="background:var(--c-afc)"></span>Costo fijo medio (CFMe)</label>
+        <label><input type="checkbox" id="showMC" checked><span class="dot" style="background:var(--c-mc)"></span>Costo marginal (CMg)</label>
+      </div>
       <canvas id="costCanvas" width="620" height="440"></canvas>
       <div class="legend">
-        <span class="item"><span class="swatch" style="background:var(--c-ac)"></span>Costo medio (CMe)</span>
-        <span class="item"><span class="swatch" style="background:var(--c-avc)"></span>Costo variable medio (CVMe)</span>
-        <span class="item"><span class="swatch" style="background:var(--c-mc)"></span>Costo marginal (CMg)</span>
         <span class="item"><span class="swatch dash" style="color:var(--c-price)"></span>Precio de mercado (P*)</span>
         <span class="item"><span class="swatch area" style="background:var(--fill-tr)"></span>Ingreso total (P*×Q*)</span>
         <span class="item"><span class="swatch area" style="background:var(--fill-tc)"></span>Costo total (CMe×Q*)</span>
@@ -412,7 +426,33 @@ const Q_FUNCS = {
     const inner = p.alphaShare*Math.pow(K,rho) + (1-p.alphaShare)*Math.pow(Lval,rho);
     return p.Ace * Math.pow(Math.max(inner,1e-12), 1/rho);
   },
-  cubic: (L,K,p) => p.A * Math.pow(K,p.theta) * Math.max(0, p.c1*L*L - p.c2*L*L*L)
+  // Forma cúbica generalizada. El producto marginal se especifica
+  // directamente como PM_L(L) = κ·L·(L̄−L)^b, con L̄=2c₁/(3c₂) la
+  // capacidad de trabajo (mismo valor que en la forma clásica) y
+  // b≥1 un parámetro de agudeza del agotamiento de la capacidad.
+  // Con b=1, PM_L es la parábola clásica 3c₂·L·(L̄−L) y Q(L) se
+  // reduce EXACTAMENTE a c₁L²−c₂L³ (verificado numéricamente).
+  // Con b>1 el pico de PM_L se adelanta (ocurre en L̄/(b+1) en vez
+  // de L̄/2) y el tramo de rendimientos decrecientes ocupa una
+  // porción mayor del rango de L y de Q, lo que hace que el costo
+  // medio se aleje más de su mínimo antes de alcanzar la capacidad
+  // — es decir, "cierra" más la curva. κ se recalibra en cada punto
+  // para que Q(L̄) coincida siempre con la capacidad de la forma
+  // clásica (c₁L̄²−c₂L̄³), de modo que b module la FORMA sin alterar
+  // la escala de producción máxima alcanzable.
+  // Q(L) es la primitiva de PM_L, obtenida en forma cerrada:
+  //   Q(L) = κ·[ L̄/(b+1)·(L̄^(b+1)−D^(b+1)) − 1/(b+2)·(L̄^(b+2)−D^(b+2)) ],  D = L̄−L
+  cubic: (L,K,p) => {
+    const Lpeak = 2*p.c1/(3*p.c2);
+    if (L <= 0 || Lpeak <= 0) return 0;
+    const b = p.b;
+    const D = Math.max(Lpeak - Math.min(L,Lpeak), 0);
+    const Qref = p.c1*Lpeak*Lpeak - p.c2*Lpeak*Lpeak*Lpeak; // capacidad de la forma clásica (b=1)
+    const kappa = Qref * (b+1) * (b+2) / Math.pow(Lpeak, b+2);
+    const bracket = Lpeak/(b+1)*(Math.pow(Lpeak,b+1) - Math.pow(D,b+1))
+                  - 1/(b+2)*(Math.pow(Lpeak,b+2) - Math.pow(D,b+2));
+    return p.A * Math.pow(K,p.theta) * Math.max(0, kappa*bracket);
+  }
 };
 
 // Cota superior de búsqueda de L para cada tecnología. Leontief y
@@ -452,7 +492,7 @@ function computeCostCurves(type, p, K, w, r){
   const { Llo, Lhi, hardCap } = getLBounds(type,K,p);
   const FC = r*K;
   const N = 300;
-  const Qgrid=[], TVC=[], TC=[], AC=[], AVC=[];
+  const Qgrid=[], TVC=[], TC=[], AC=[], AVC=[], AFC=[];
 
   for (let i=0;i<N;i++){
     const t = i/(N-1);
@@ -463,6 +503,7 @@ function computeCostCurves(type, p, K, w, r){
     Qgrid.push(Q); TVC.push(tvc); TC.push(tc);
     AC.push(tc/Math.max(Q,1e-9));
     AVC.push(tvc/Math.max(Q,1e-9));
+    AFC.push(FC/Math.max(Q,1e-9));
   }
 
   const MC = new Array(N);
@@ -472,7 +513,7 @@ function computeCostCurves(type, p, K, w, r){
     else MC[i] = (TC[i+1]-TC[i-1])/Math.max(Qgrid[i+1]-Qgrid[i-1],1e-9);
   }
 
-  return { Qgrid, TVC, TC, AC, AVC, MC, Qmin:Qgrid[0], Qmax:Qgrid[N-1], FC, hardCap };
+  return { Qgrid, TVC, TC, AC, AVC, AFC, MC, Qmin:Qgrid[0], Qmax:Qgrid[N-1], FC, hardCap };
 }
 
 // Elección óptima de la firma tomadora de precios: maximiza
@@ -503,12 +544,13 @@ function computeFirmChoice(cc, P){
   // nula). Se lo trata como cierre para evitar reportar un CMe espurio.
   const minMeaningfulQ = Math.max(cc.Qmax*0.002, 1e-6);
   if (shutdownProfit >= bestProfit || Qgrid[bestI] < minMeaningfulQ){
-    return { shutdown:true, Qstar:0, TR:0, TCstar:FC, profit:shutdownProfit, ACstar:null, MCstar:null, cornerAtBound:false };
+    return { shutdown:true, Qstar:0, TR:0, TCstar:FC, profit:shutdownProfit, ACstar:null, AVCstar:null, AFCstar:null, MCstar:null, cornerAtBound:false };
   }
   const cornerAtBound = (bestI === Qgrid.length-1);
   return {
     shutdown:false, Qstar:Qgrid[bestI], TR:P*Qgrid[bestI], TCstar:TC[bestI],
-    profit:bestProfit, ACstar:TC[bestI]/Qgrid[bestI], MCstar:MC[bestI], index:bestI,
+    profit:bestProfit, ACstar:TC[bestI]/Qgrid[bestI], AVCstar:cc.AVC[bestI], AFCstar:cc.AFC[bestI],
+    MCstar:MC[bestI], index:bestI,
     cornerAtBound, hardCap:cc.hardCap
   };
 }
@@ -584,12 +626,19 @@ const PROD_DEFS = {
   },
   cubic: {
     label: 'Cúbica',
-    formula: (p) => `Q = ${fmt(p.A)}·K^${fmt(p.theta)}·( ${fmt(p.c1)}·L² − ${fmt(p.c2)}·L³ )`,
+    formula: (p) => {
+      const Lpeak = 2*p.c1/(3*p.c2);
+      const base = `Q = ${fmt(p.A)}·K^${fmt(p.theta)}·( ${fmt(p.c1)}·L² − ${fmt(p.c2)}·L³ )`;
+      if (Math.abs(p.b-1) < 1e-9) return base + `  (agudeza b=1: forma cúbica clásica)`;
+      return `PM<sub>L</sub>(L) = κ·L·(L̄−L)^${fmt(p.b,1)},  L̄ = ${fmt(Lpeak,1)} (capacidad de trabajo);  `
+           + `Q(L) = ∫₀ᴸ PM<sub>L</sub> — κ calibrada para que Q(L̄) coincida con la forma clásica (b=1: ${base})`;
+    },
     params: [
       { key:'A',     label:'Escala (A)',                    min:0.5,  max:2,   step:0.1,   def:1.0 },
       { key:'theta', label:'Elasticidad de K (θ)',           min:0.1,  max:0.9, step:0.05,  def:0.5 },
       { key:'c1',    label:'Coeficiente cuadrático (c₁)',    min:0.3,  max:2,   step:0.05,  def:0.9 },
-      { key:'c2',    label:'Coeficiente cúbico (c₂)',        min:0.01, max:0.1, step:0.005, def:0.03 }
+      { key:'c2',    label:'Coeficiente cúbico (c₂)',        min:0.01, max:0.1, step:0.005, def:0.03 },
+      { key:'b',     label:'Agudeza del agotamiento de la capacidad (b)', min:1, max:6, step:0.5, def:1 }
     ]
   }
 };
@@ -613,6 +662,21 @@ const state = {
   // menores a 1 acercan (rango visible más chico); mayores a 1 alejan.
   // Cada panel se controla de forma independiente.
   zoom: { cost: 1, profit: 1 },
+  // Desplazamiento (pan) del rango visible en cada panel, en las
+  // unidades propias de cada eje (Q para x; costo/precio para el eje y
+  // del panel de costos; beneficio para el eje y del panel de
+  // beneficios). Solo tiene efecto cuando el zoom del panel correspon-
+  // diente reduce el rango visible por debajo del rango natural de los
+  // datos; en ese caso, arrastrando con el mouse (o el dedo) se
+  // recorre la porción de datos que el zoom deja fuera de la vista.
+  // Cada valor se acota en cada redibujo (ver drawCostPanel/
+  // drawProfitPanel) al rango efectivamente disponible, por lo que no
+  // requiere reinicializarse al cambiar de tecnología o de parámetros.
+  pan: { cost: { x:0, y:0 }, profit: { x:0, y:0 } },
+  // Curvas de costo medio/marginal visibles en el panel de costos (todas
+  // activas por defecto); el selector de tildes las activa o desactiva
+  // sin recalcular nada, solo afecta qué se dibuja.
+  visibleCurves: { ac:true, avc:true, afc:true, mc:true },
   // Referencia fijada para comparar un cambio (ver sección 8):
   //  - refK: fotografía {prodType, params, K, w, r} tomada al fijarla,
   //    o null si no hay referencia de capital/tecnología activa.
@@ -733,6 +797,10 @@ el('resetBtn').addEventListener('click', ()=>{
   state.market = { ad:60, bd:1.5, as_:10, bs:1.2 };
   state.refK = null;
   state.refP = null;
+  state.zoom = { cost:1, profit:1 };
+  state.pan = { cost:{x:0,y:0}, profit:{x:0,y:0} };
+  el('zoomCost-label').textContent = '100%';
+  el('zoomProfit-label').textContent = '100%';
 
   el('prodType').value = state.prodType;
   el('K').value = state.K; el('K-val').textContent = fmt(state.K,2);
@@ -872,12 +940,91 @@ function wireZoomControls(containerId, zoomKey){
   });
   box.querySelector('[data-zoom-reset]').addEventListener('click', ()=>{
     state.zoom[zoomKey] = 1;
+    state.pan[zoomKey].x = 0; state.pan[zoomKey].y = 0;
     refreshLabel(); recomputeAndDraw();
   });
   refreshLabel();
 }
 wireZoomControls('zoomCost','cost');
 wireZoomControls('zoomProfit','profit');
+
+/* ------------------------------------------------------------
+   Desplazamiento (pan) con el mouse o el dedo, para recorrer el
+   panel de costos o el de beneficios cuando el zoom aplicado deja
+   contenido fuera del área visible. Cada función de dibujo (drawCost-
+   Panel/drawProfitPanel) publica en canvas._view la ventana [xMin,xMax]
+   / [yMin,yMax] y el recorrido disponible (xPanMax/yPanMax) vigentes en
+   el último redibujo; este manejador convierte el desplazamiento del
+   puntero en píxeles CSS a un desplazamiento en las unidades propias de
+   cada eje, usando esa misma ventana, y lo acumula en state.pan[panKey]
+   (que drawCostPanel/drawProfitPanel vuelven a acotar en cada redibujo).
+   Se usan Pointer Events para cubrir mouse y touch con un solo manejador.
+   ------------------------------------------------------------ */
+function wirePanDrag(canvasId, panKey){
+  const canvas = el(canvasId);
+  let dragging = false;
+  let startClientX = 0, startClientY = 0;
+  let startPanX = 0, startPanY = 0;
+  let startView = null;
+
+  function panAvailable(){
+    const v = canvas._view;
+    return !!(v && (v.xPanMax>1e-9 || v.yPanMax>1e-9));
+  }
+  function updateCursor(){
+    if (dragging) return;
+    canvas.style.cursor = panAvailable() ? 'grab' : '';
+  }
+
+  canvas.addEventListener('pointerdown', (e)=>{
+    if (!panAvailable()) return;
+    dragging = true;
+    startClientX = e.clientX; startClientY = e.clientY;
+    startPanX = state.pan[panKey].x; startPanY = state.pan[panKey].y;
+    startView = canvas._view;
+    try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+    canvas.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  canvas.addEventListener('pointermove', (e)=>{
+    if (!dragging || !startView) return;
+    const dxPx = e.clientX-startClientX, dyPx = e.clientY-startClientY;
+    const scaleX = (startView.xMax-startView.xMin)/(startView.rect.x1-startView.rect.x0);
+    const scaleY = (startView.yMax-startView.yMin)/(startView.rect.y1-startView.rect.y0);
+    // Arrastrar hacia la derecha/abajo revela el contenido que queda a
+    // la izquierda/arriba de la ventana actual (metáfora de "tomar y
+    // correr" el gráfico, igual que un mapa); de ahí el signo opuesto en
+    // x y el mismo signo en y (el eje y de los datos crece hacia arriba,
+    // mientras que el de los píxeles crece hacia abajo).
+    state.pan[panKey].x = startPanX - dxPx*scaleX;
+    state.pan[panKey].y = startPanY + dyPx*scaleY;
+    recomputeAndDraw();
+  });
+  function endDrag(e){
+    if (!dragging) return;
+    dragging = false;
+    try{ canvas.releasePointerCapture(e.pointerId); }catch(err){}
+    updateCursor();
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+  canvas.addEventListener('pointerenter', updateCursor);
+  canvas._updatePanCursor = updateCursor;
+}
+wirePanDrag('costCanvas','cost');
+wirePanDrag('profitCanvas','profit');
+
+// Selector de curvas visibles en el panel de costos: cada tilde
+// activa o desactiva el dibujo de la curva correspondiente (y, cuando
+// corresponde, el de su contraparte en la referencia K₀), sin alterar
+// ningún cálculo subyacente.
+const CURVE_TOGGLE_IDS = { ac:'showAC', avc:'showAVC', afc:'showAFC', mc:'showMC' };
+Object.keys(CURVE_TOGGLE_IDS).forEach(key=>{
+  el(CURVE_TOGGLE_IDS[key]).addEventListener('change', (e)=>{
+    state.visibleCurves[key] = e.target.checked;
+    recomputeAndDraw();
+  });
+});
 
 /* ============================================================
    5. UTILIDADES DE DIBUJO EN CANVAS
@@ -910,8 +1057,11 @@ function clipToRect(ctx, rect){
   ctx.clip();
 }
 
-function mapX(Q,xMax,rect){ return rect.x0 + (Q/xMax)*(rect.x1-rect.x0); }
-function mapY(V,yMax,rect){ return rect.y1 - (V/yMax)*(rect.y1-rect.y0); }
+// xMin/yMin (por defecto 0) permiten desplazar (pan) el origen del rango
+// visible sin alterar la escala: el rango mapeado al área de trazado es
+// [xMin,xMax] / [yMin,yMax] en lugar de asumir siempre [0,xMax]/[0,yMax].
+function mapX(Q,xMax,rect,xMin){ xMin = xMin||0; return rect.x0 + ((Q-xMin)/(xMax-xMin))*(rect.x1-rect.x0); }
+function mapY(V,yMax,rect,yMin){ yMin = yMin||0; return rect.y1 - ((V-yMin)/(yMax-yMin))*(rect.y1-rect.y0); }
 
 function niceStep(range, targetTicks){
   const raw = range/targetTicks;
@@ -922,24 +1072,29 @@ function niceStep(range, targetTicks){
   return step*mag;
 }
 
-function drawAxes(ctx, rect, xMax, yMax, xLabel, yLabel){
+function drawAxes(ctx, rect, xMax, yMax, xLabel, yLabel, xMin, yMin){
+  xMin = xMin||0; yMin = yMin||0;
   ctx.save();
   ctx.strokeStyle = getVar('--gridline');
   ctx.fillStyle = getVar('--text-muted');
   ctx.font = '11px system-ui,-apple-system,sans-serif';
   ctx.lineWidth = 1;
 
-  const xStep = niceStep(xMax,6), yStep = niceStep(yMax,6);
-  // gridlines + y ticks
+  const xStep = niceStep(xMax-xMin,6), yStep = niceStep(yMax-yMin,6);
+  // gridlines + y ticks (el primer tick se alinea al múltiplo de yStep/xStep
+  // más cercano dentro del rango visible, para que la grilla se vea
+  // correcta también cuando xMin/yMin no son cero, es decir, con pan aplicado)
+  const yStart = Math.ceil(yMin/yStep)*yStep;
   ctx.textAlign='right'; ctx.textBaseline='middle';
-  for (let v=0; v<=yMax+1e-9; v+=yStep){
-    const y = mapY(v,yMax,rect);
+  for (let v=yStart; v<=yMax+1e-9; v+=yStep){
+    const y = mapY(v,yMax,rect,yMin);
     ctx.beginPath(); ctx.moveTo(rect.x0,y); ctx.lineTo(rect.x1,y); ctx.stroke();
     ctx.fillText(fmt(v,0), rect.x0-8, y);
   }
+  const xStart = Math.ceil(xMin/xStep)*xStep;
   ctx.textAlign='center'; ctx.textBaseline='top';
-  for (let v=0; v<=xMax+1e-9; v+=xStep){
-    const x = mapX(v,xMax,rect);
+  for (let v=xStart; v<=xMax+1e-9; v+=xStep){
+    const x = mapX(v,xMax,rect,xMin);
     ctx.fillText(fmt(v,0), x, rect.y1+6);
   }
 
@@ -959,15 +1114,16 @@ function drawAxes(ctx, rect, xMax, yMax, xLabel, yLabel){
   ctx.restore();
 }
 
-function drawSeries(ctx, pts, xMax, yMax, rect, color, width, dash){
+function drawSeries(ctx, pts, xMax, yMax, rect, color, width, dash, xMin, yMin){
+  xMin = xMin||0; yMin = yMin||0;
   ctx.save();
   ctx.strokeStyle = color; ctx.lineWidth = width||2.4; ctx.lineJoin='round'; ctx.lineCap='round';
   if (dash) ctx.setLineDash(dash);
   ctx.beginPath();
   let started=false;
   pts.forEach(pt=>{
-    const y = mapY(Math.min(pt.y,yMax*1.06), yMax, rect);
-    const x = mapX(pt.x, xMax, rect);
+    const y = mapY(Math.min(pt.y,yMax*1.06), yMax, rect, yMin);
+    const x = mapX(pt.x, xMax, rect, xMin);
     if (y < rect.y0-40) return; // recorta asíntotas verticales fuera de rango
     if (!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
   });
@@ -975,8 +1131,8 @@ function drawSeries(ctx, pts, xMax, yMax, rect, color, width, dash){
   ctx.restore();
 }
 
-function drawDot(ctx, Qv, Vv, xMax, yMax, rect, color, r){
-  const x = mapX(Qv,xMax,rect), y = mapY(Math.min(Vv,yMax),yMax,rect);
+function drawDot(ctx, Qv, Vv, xMax, yMax, rect, color, r, xMin, yMin){
+  const x = mapX(Qv,xMax,rect,xMin), y = mapY(Math.min(Vv,yMax),yMax,rect,yMin);
   ctx.save();
   ctx.fillStyle = color;
   ctx.beginPath(); ctx.arc(x,y,r||4.5,0,Math.PI*2); ctx.fill();
@@ -984,8 +1140,8 @@ function drawDot(ctx, Qv, Vv, xMax, yMax, rect, color, r){
   ctx.restore();
 }
 
-function dashedHLine(ctx, Vv, xMax, yMax, rect, color, label, dash, labelPos){
-  const y = mapY(Vv, yMax, rect);
+function dashedHLine(ctx, Vv, xMax, yMax, rect, color, label, dash, labelPos, yMin){
+  const y = mapY(Vv, yMax, rect, yMin);
   if (y < rect.y0-2 || y > rect.y1+2) return;
   ctx.save();
   ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.setLineDash(dash||[5,4]);
@@ -1000,8 +1156,8 @@ function dashedHLine(ctx, Vv, xMax, yMax, rect, color, label, dash, labelPos){
   ctx.restore();
 }
 
-function dashedVLine(ctx, Qv, xMax, yMax, rect, color, label){
-  const x = mapX(Qv, xMax, rect);
+function dashedVLine(ctx, Qv, xMax, yMax, rect, color, label, xMin){
+  const x = mapX(Qv, xMax, rect, xMin);
   ctx.save();
   ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.setLineDash([5,4]);
   ctx.beginPath(); ctx.moveTo(x,rect.y0); ctx.lineTo(x,rect.y1); ctx.stroke();
@@ -1028,21 +1184,60 @@ function drawCostPanel(cc, market, choice, ref){
   const hasRefK = !!(ref && ref.cc0);
   const hasRefP = !!(ref && ref.refP!==null && ref.refP!==undefined);
   const xMaxBase = Math.max(cc.Qmax, hasRefK ? ref.cc0.Qmax : 0)*1.04;
-  const xMax = xMaxBase*zoomC;
-  const mcCap = percentile(cc.MC, 0.9)*1.35;
-  const mcCapRef = hasRefK ? percentile(ref.cc0.MC, 0.9)*1.35 : 0;
-  const acRef = hasRefK ? percentile(ref.cc0.AC,0.95)*1.2 : 0;
-  const yMax = Math.max(
+
+  // El ajuste automático del eje vertical solo toma en cuenta las curvas
+  // efectivamente tildadas en el selector: al ocultar una curva de trazo
+  // muy pronunciado (p.ej. CMg cerca de una restricción de capacidad),
+  // el resto se reescala para aprovechar mejor el espacio disponible.
+  const vc = state.visibleCurves;
+  const acCap     = vc.ac  ? percentile(cc.AC,0.95)*1.2   : 0;
+  const avcCap    = vc.avc ? percentile(cc.AVC,0.95)*1.2  : 0;
+  const afcCap    = vc.afc ? percentile(cc.AFC,0.95)*1.2  : 0;
+  const acCapRef  = (hasRefK && vc.ac)  ? percentile(ref.cc0.AC,0.95)*1.2  : 0;
+  const avcCapRef = (hasRefK && vc.avc) ? percentile(ref.cc0.AVC,0.95)*1.2 : 0;
+  const afcCapRef = (hasRefK && vc.afc) ? percentile(ref.cc0.AFC,0.95)*1.2 : 0;
+  // CMg: cerca de una restricción de capacidad muy abrupta (p.ej. la
+  // cúbica con alta "agudeza" b, o Leontief) el costo marginal puede
+  // dispararse varios órdenes de magnitud por encima del resto de las
+  // curvas. Sin acotar, ese valor extremo domina el eje vertical
+  // compartido y aplana visualmente a CMe/CVMe/CFMe -- el efecto
+  // opuesto al buscado. Por eso, cuando alguna curva de costo MEDIO
+  // está tildada, el aporte de CMg al autoescalado se acota a un
+  // múltiplo de esa escala (CMg simplemente se recorta al llegar al
+  // borde superior del panel, lo cual sigue siendo una representación
+  // válida de un costo marginal disparado). Si CMg es la única curva
+  // visible, conserva su propio rango completo.
+  const otherCapsMax    = Math.max(acCap, avcCap, afcCap);
+  const otherCapsMaxRef = Math.max(acCapRef, avcCapRef, afcCapRef);
+  const mcCapRaw    = vc.mc ? percentile(cc.MC,0.9)*1.35 : 0;
+  const mcCapRefRaw = (hasRefK && vc.mc) ? percentile(ref.cc0.MC,0.9)*1.35 : 0;
+  const mcCap     = (vc.mc && otherCapsMax>0)    ? Math.min(mcCapRaw, otherCapsMax*3)       : mcCapRaw;
+  const mcCapRef  = (hasRefK && vc.mc && otherCapsMaxRef>0) ? Math.min(mcCapRefRaw, otherCapsMaxRef*3) : mcCapRefRaw;
+  const yMaxBase = Math.max(
     (market.Peq||0)*1.25,
     hasRefP ? ref.refP*1.25 : 0,
-    percentile(cc.AC,0.95)*1.2,
-    acRef,
-    mcCap,
-    mcCapRef,
+    acCap, avcCap, afcCap, mcCap,
+    acCapRef, avcCapRef, afcCapRef, mcCapRef,
     5
-  )*zoomC;
+  );
 
-  drawAxes(ctx, rect, xMax, yMax, 'Cantidad (Q)', 'Costo / precio ($)');
+  // Ventana visible tras aplicar zoom: su ancho/alto es una fracción
+  // (zoomC<1) o un múltiplo (zoomC>1) del rango natural de los datos.
+  // Cuando el zoom reduce la ventana por debajo del rango natural, sobra
+  // recorrido para desplazarse (pan); ese recorrido se acota en
+  // xPanMax/yPanMax y el desplazamiento acumulado en state.pan.cost se
+  // recorta a ese rango en cada redibujo, de modo que nunca deja ver
+  // más allá de los datos ni requiere reiniciarse al cambiar parámetros.
+  const xWindowW = xMaxBase*zoomC;
+  const yWindowH = yMaxBase*zoomC;
+  const xPanMax = Math.max(0, xMaxBase - xWindowW);
+  const yPanMax = Math.max(0, yMaxBase - yWindowH);
+  state.pan.cost.x = Math.min(Math.max(state.pan.cost.x, 0), xPanMax);
+  state.pan.cost.y = Math.min(Math.max(state.pan.cost.y, 0), yPanMax);
+  const xMin = state.pan.cost.x, xMax = xMin + xWindowW;
+  const yMin = state.pan.cost.y, yMax = yMin + yWindowH;
+
+  drawAxes(ctx, rect, xMax, yMax, 'Cantidad (Q)', 'Costo / precio ($)', xMin, yMin);
 
   // A partir de aquí, todo el contenido de datos se recorta al área de
   // trazado: con zoom aplicado, curvas, áreas y marcas pueden exceder
@@ -1052,9 +1247,9 @@ function drawCostPanel(cc, market, choice, ref){
 
   // Áreas: costo total (bajo CMe hasta Q*) e ingreso total (bajo P* hasta Q*)
   if (!choice.shutdown && choice.Qstar>0){
-    const xQ = mapX(choice.Qstar, xMax, rect);
-    const yAC = mapY(Math.min(choice.ACstar,yMax), yMax, rect);
-    const yP  = mapY(Math.min(market.Peq,yMax), yMax, rect);
+    const xQ = mapX(choice.Qstar, xMax, rect, xMin);
+    const yAC = mapY(Math.min(choice.ACstar,yMax), yMax, rect, yMin);
+    const yP  = mapY(Math.min(market.Peq,yMax), yMax, rect, yMin);
     const yBase = rect.y1;
 
     // CT: rectángulo bajo CMe(Q*)
@@ -1077,31 +1272,58 @@ function drawCostPanel(cc, market, choice, ref){
     ctx.restore();
   }
 
-  // Curvas
-  const ptsAC  = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AC[i]}));
-  const ptsAVC = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AVC[i]}));
-  const ptsMC  = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.MC[i]}));
-  drawSeries(ctx, ptsAVC, xMax, yMax, rect, getVar('--c-avc'));
-  drawSeries(ctx, ptsAC,  xMax, yMax, rect, getVar('--c-ac'));
-  drawSeries(ctx, ptsMC,  xMax, yMax, rect, getVar('--c-mc'));
+  // Curvas: costo medio (CMe), costo variable medio (CVMe), costo fijo
+  // medio (CFMe) y costo marginal (CMg) — el conjunto completo de curvas
+  // de costo unitario de corto plazo. Cada una se dibuja solo si está
+  // tildada en el selector; los datos subyacentes siempre se calculan
+  // en su totalidad, el selector únicamente controla qué se muestra.
+  if (vc.avc){
+    const ptsAVC = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AVC[i]}));
+    drawSeries(ctx, ptsAVC, xMax, yMax, rect, getVar('--c-avc'), undefined, undefined, xMin, yMin);
+  }
+  if (vc.afc){
+    const ptsAFC = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AFC[i]}));
+    drawSeries(ctx, ptsAFC, xMax, yMax, rect, getVar('--c-afc'), undefined, undefined, xMin, yMin);
+  }
+  if (vc.ac){
+    const ptsAC = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AC[i]}));
+    drawSeries(ctx, ptsAC, xMax, yMax, rect, getVar('--c-ac'), undefined, undefined, xMin, yMin);
+  }
+  if (vc.mc){
+    const ptsMC = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.MC[i]}));
+    drawSeries(ctx, ptsMC, xMax, yMax, rect, getVar('--c-mc'), undefined, undefined, xMin, yMin);
+  }
 
-  // Curvas de referencia: costo medio y marginal correspondientes a la
+  // Curvas de referencia: las mismas cuatro curvas correspondientes a la
   // tecnología/K/w/r fijados como K₀, evaluadas al precio de mercado
   // vigente (permiten comparar "misma firma, distinto K" al precio de hoy).
+  // Respetan el mismo selector de visibilidad que las curvas vigentes.
   if (hasRefK){
     const colRef = getVar('--c-ref');
-    const ptsACref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.AC[i]}));
-    const ptsMCref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.MC[i]}));
-    drawSeries(ctx, ptsACref, xMax, yMax, rect, colRef, 1.8, [6,3]);
-    drawSeries(ctx, ptsMCref, xMax, yMax, rect, colRef, 1.8, [2,3]);
+    if (vc.avc){
+      const ptsAVCref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.AVC[i]}));
+      drawSeries(ctx, ptsAVCref, xMax, yMax, rect, colRef, 1.8, [1,3], xMin, yMin);
+    }
+    if (vc.afc){
+      const ptsAFCref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.AFC[i]}));
+      drawSeries(ctx, ptsAFCref, xMax, yMax, rect, colRef, 1.8, [8,3,2,3], xMin, yMin);
+    }
+    if (vc.ac){
+      const ptsACref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.AC[i]}));
+      drawSeries(ctx, ptsACref, xMax, yMax, rect, colRef, 1.8, [6,3], xMin, yMin);
+    }
+    if (vc.mc){
+      const ptsMCref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.MC[i]}));
+      drawSeries(ctx, ptsMCref, xMax, yMax, rect, colRef, 1.8, [2,3], xMin, yMin);
+    }
     if (ref.choiceRefK && !ref.choiceRefK.shutdown && ref.choiceRefK.Qstar>0){
-      drawDot(ctx, ref.choiceRefK.Qstar, ref.choiceRefK.MCstar, xMax, yMax, rect, colRef, 3.6);
+      drawDot(ctx, ref.choiceRefK.Qstar, ref.choiceRefK.MCstar, xMax, yMax, rect, colRef, 3.6, xMin, yMin);
     }
   }
 
   // Precio de mercado
   if (market.Peq!==null){
-    dashedHLine(ctx, market.Peq, xMax, yMax, rect, getVar('--c-price'), 'P*');
+    dashedHLine(ctx, market.Peq, xMax, yMax, rect, getVar('--c-price'), 'P*', undefined, undefined, yMin);
   }
 
   // Precio de referencia P₀ (fijado en un momento anterior), evaluado
@@ -1109,27 +1331,35 @@ function drawCostPanel(cc, market, choice, ref){
   // elegido la firma de hoy si el precio siguiera siendo P₀.
   if (hasRefP){
     const colRef = getVar('--c-ref');
-    dashedHLine(ctx, ref.refP, xMax, yMax, rect, colRef, 'P₀', [3,3], 'left');
+    dashedHLine(ctx, ref.refP, xMax, yMax, rect, colRef, 'P₀', [3,3], 'left', yMin);
     if (ref.choiceRefP && !ref.choiceRefP.shutdown && ref.choiceRefP.Qstar>0){
-      drawDot(ctx, ref.choiceRefP.Qstar, ref.choiceRefP.MCstar, xMax, yMax, rect, colRef, 3.6);
+      drawDot(ctx, ref.choiceRefP.Qstar, ref.choiceRefP.MCstar, xMax, yMax, rect, colRef, 3.6, xMin, yMin);
     }
   }
 
   // Punto óptimo de la firma
   if (!choice.shutdown && choice.Qstar>0){
-    dashedVLine(ctx, choice.Qstar, xMax, yMax, rect, getVar('--c-price'), null);
-    drawDot(ctx, choice.Qstar, choice.MCstar, xMax, yMax, rect, getVar('--c-price'));
-    const xQ2 = mapX(choice.Qstar,xMax,rect);
+    dashedVLine(ctx, choice.Qstar, xMax, yMax, rect, getVar('--c-price'), null, xMin);
+    drawDot(ctx, choice.Qstar, choice.MCstar, xMax, yMax, rect, getVar('--c-price'), undefined, xMin, yMin);
+    const xQ2 = mapX(choice.Qstar,xMax,rect,xMin);
     const nearRightEdge = xQ2 > rect.x1-72;
     ctx.save();
     ctx.fillStyle = getVar('--c-price'); ctx.font='11px system-ui,-apple-system,sans-serif';
     ctx.textAlign = nearRightEdge ? 'right' : 'left';
     ctx.textBaseline='bottom';
-    ctx.fillText('Q* = '+fmt(choice.Qstar,2), xQ2+(nearRightEdge?-6:6), mapY(choice.MCstar,yMax,rect)-4);
+    ctx.fillText('Q* = '+fmt(choice.Qstar,2), xQ2+(nearRightEdge?-6:6), mapY(choice.MCstar,yMax,rect,yMin)-4);
     ctx.restore();
   }
 
   ctx.restore(); // fin del recorte al área de trazado
+
+  // Se guarda la ventana visible vigente en el propio elemento canvas para
+  // que el manejador de arrastre (wirePanDrag) pueda convertir un
+  // desplazamiento en píxeles a un desplazamiento en unidades de datos sin
+  // duplicar aquí el cálculo del zoom, y para que el cursor "grab" se
+  // muestre únicamente cuando efectivamente hay recorrido para desplazarse.
+  canvas._view = { rect, xMin, xMax, yMin, yMax, xPanMax, yPanMax };
+  if (canvas._updatePanCursor) canvas._updatePanCursor();
 }
 
 function drawMarketPanel(market, ref){
@@ -1178,8 +1408,19 @@ function drawMarketPanel(market, ref){
     ctx.restore();
   }
 
-  // Curvas de oferta y demanda
-  const demandPts = [{x:0,y:m.ad},{x:xViewMax,y:Math.max(m.ad-m.bd*xViewMax,0)}];
+  // Curvas de oferta y demanda. La demanda inversa P = a_d − b_d·Q se
+  // trunca en precio cero a partir de su cantidad de reserva (a_d/b_d):
+  // extenderla en línea recta hasta xViewMax con un simple recorte del
+  // valor final a 0 (como se hacía antes) distorsiona la pendiente
+  // visible siempre que esa cantidad de reserva caiga dentro del rango
+  // graficado, y por lo tanto ya no pasa por el punto de equilibrio ni
+  // por el borde del área de excedente del consumidor efectivamente
+  // sombreada. Se dibuja entonces solo hasta el verdadero cruce con el
+  // eje horizontal. La oferta P = a_s + b_s·Q, con a_s ≥ 0, no requiere
+  // truncamiento: es no negativa para todo Q ≥ 0 dentro del rango.
+  const demandZeroQ = m.bd>0 ? m.ad/m.bd : Infinity;
+  const demandXEnd = Math.min(xViewMax, demandZeroQ);
+  const demandPts = [{x:0,y:m.ad},{x:demandXEnd,y:Math.max(m.ad-m.bd*demandXEnd,0)}];
   const supplyPts = [{x:0,y:m.as_},{x:xViewMax,y:m.as_+m.bs*xViewMax}];
   drawSeries(ctx, demandPts, xViewMax, yMax, rect, getVar('--c-demand'));
   drawSeries(ctx, supplyPts, xViewMax, yMax, rect, getVar('--c-supply'));
@@ -1213,7 +1454,9 @@ function drawMarketPanel(market, ref){
   // y el equilibrio vigentes.
   if (hasRefM){
     const colRef = getVar('--c-ref');
-    const demandPtsRef = [{x:0,y:rm.ad},{x:xViewMax,y:Math.max(rm.ad-rm.bd*xViewMax,0)}];
+    const demandZeroQRef = rm.bd>0 ? rm.ad/rm.bd : Infinity;
+    const demandXEndRef = Math.min(xViewMax, demandZeroQRef);
+    const demandPtsRef = [{x:0,y:rm.ad},{x:demandXEndRef,y:Math.max(rm.ad-rm.bd*demandXEndRef,0)}];
     const supplyPtsRef = [{x:0,y:rm.as_},{x:xViewMax,y:rm.as_+rm.bs*xViewMax}];
     drawSeries(ctx, demandPtsRef, xViewMax, yMax, rect, colRef, 1.8, [6,3]);
     drawSeries(ctx, supplyPtsRef, xViewMax, yMax, rect, colRef, 1.8, [2,3]);
@@ -1256,15 +1499,23 @@ function drawProfitPanel(profitPts, choice, ref){
   const yMaxNatural = piMax + span*0.12;
   const yMinNatural = piMin - span*0.12;
 
-  // El zoom escala ambos ejes en torno al centro del ajuste automático.
-  const xMax = xMaxNatural*zoomP;
-  const yCenter = (yMaxNatural+yMinNatural)/2;
-  const yHalfSpan = (yMaxNatural-yMinNatural)/2*zoomP;
-  const yMax = yCenter+yHalfSpan, yMin = yCenter-yHalfSpan;
+  // Ventana visible tras aplicar zoom, con el mismo mecanismo de pan que
+  // el panel de costos (ver comentario extenso en drawCostPanel): al
+  // reducir el ancho/alto de la ventana por debajo del rango natural de
+  // los datos, sobra recorrido para desplazarse, acotado en xPanMax/
+  // yPanMax y recortado en cada redibujo contra state.pan.profit.
+  const xWindowW = xMaxNatural*zoomP;
+  const yWindowH = (yMaxNatural-yMinNatural)*zoomP;
+  const xPanMax = Math.max(0, xMaxNatural - xWindowW);
+  const yPanMax = Math.max(0, (yMaxNatural-yMinNatural) - yWindowH);
+  state.pan.profit.x = Math.min(Math.max(state.pan.profit.x, 0), xPanMax);
+  state.pan.profit.y = Math.min(Math.max(state.pan.profit.y, 0), yPanMax);
+  const xMin = state.pan.profit.x, xMax = xMin + xWindowW;
+  const yMin = yMinNatural + state.pan.profit.y, yMax = yMin + yWindowH;
 
   // eje y con cero visible: remapear manualmente
   function mapYp(v){ return rect.y1 - ((v-yMin)/(yMax-yMin))*(rect.y1-rect.y0); }
-  function mapXp(Q){ return rect.x0 + (Q/xMax)*(rect.x1-rect.x0); }
+  function mapXp(Q){ return rect.x0 + ((Q-xMin)/(xMax-xMin))*(rect.x1-rect.x0); }
 
   // grilla y etiquetas y
   ctx.save();
@@ -1276,9 +1527,9 @@ function drawProfitPanel(profitPts, choice, ref){
     ctx.beginPath(); ctx.moveTo(rect.x0,y); ctx.lineTo(rect.x1,y); ctx.stroke();
     ctx.fillText(fmt(v,0), rect.x0-8, y);
   }
-  const xStep = niceStep(xMax,7);
+  const xStep = niceStep(xMax-xMin,7);
   ctx.textAlign='center'; ctx.textBaseline='top';
-  for (let v=0; v<=xMax; v+=xStep){
+  for (let v=Math.ceil(xMin/xStep)*xStep; v<=xMax; v+=xStep){
     ctx.fillText(fmt(v,0), mapXp(v), rect.y1+6);
   }
   ctx.restore();
@@ -1370,6 +1621,11 @@ function drawProfitPanel(profitPts, choice, ref){
   ctx.textAlign='center'; ctx.textBaseline='alphabetic';
   ctx.fillText('Cantidad (Q)', (rect.x0+rect.x1)/2, rect.y1+28);
   ctx.restore();
+
+  // Ventana visible vigente, para el manejador de arrastre (ver nota
+  // análoga al final de drawCostPanel).
+  canvas._view = { rect, xMin, xMax, yMin, yMax, xPanMax, yPanMax };
+  if (canvas._updatePanCursor) canvas._updatePanCursor();
 }
 
 function drawDotAt(ctx,x,y,color){
@@ -1394,6 +1650,8 @@ function renderFirmReadout(cc, market, choice, ref){
     ['P* (mercado)', market.Peq===null ? '—' : fmt(market.Peq,2)],
     ['Q*', fmt(choice.Qstar,2)],
     ['CMe(Q*)', choice.ACstar===null? '—' : fmt(choice.ACstar,2)],
+    ['CVMe(Q*)', choice.AVCstar===null? '—' : fmt(choice.AVCstar,2)],
+    ['CFMe(Q*)', choice.AFCstar===null? '—' : fmt(choice.AFCstar,2)],
     ['CMg(Q*)', choice.MCstar===null? '—' : fmt(choice.MCstar,2)],
     ['Ingreso total', fmt(choice.TR,2)],
     ['Costo total', fmt(choice.TCstar,2)],
@@ -1533,7 +1791,7 @@ function recomputeAndDraw(){
   const market = computeMarket(state.market);
   const Pforfirm = market.noTrade ? 0 : market.Peq;
   const choice = computeFirmChoice(cc, Pforfirm);
-  if (market.noTrade){ choice.shutdown = true; choice.Qstar = 0; choice.TR = 0; choice.TCstar = cc.FC; choice.profit = -cc.FC; choice.ACstar=null; choice.MCstar=null; }
+  if (market.noTrade){ choice.shutdown = true; choice.Qstar = 0; choice.TR = 0; choice.TCstar = cc.FC; choice.profit = -cc.FC; choice.ACstar=null; choice.AVCstar=null; choice.AFCstar=null; choice.MCstar=null; }
   const profitPts = computeProfitCurve(cc, Pforfirm);
 
   // Escenarios de referencia (comparación "antes / después"), cada uno
