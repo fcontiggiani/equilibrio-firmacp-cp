@@ -1,6 +1,6 @@
 # Simulador de costos de corto plazo y equilibrio competitivo
 
-Simulador interactivo, en HTML/JavaScript autocontenido, para la derivación gráfica y numérica de las curvas de costo de corto plazo de una firma a partir de distintas funciones de producción, y para el análisis de su decisión de oferta como tomadora de precios dentro de un mercado de competencia perfecta. Desarrollado como material didáctico para un curso de Microeconomía Intermedia de nivel universitario (Bloque 2 — Teoría de la producción y costos).
+Simulador interactivo, en HTML/JavaScript autocontenido, para la derivación gráfica y numérica de las curvas de costo de corto plazo de una firma a partir de distintas funciones de producción, y para el análisis de su decisión de oferta como tomadora de precios dentro de un mercado de competencia perfecta. Desarrollado como material didáctico para un curso de Microeconomía Intermedia de nivel universitario.
 
 **[▶ Abrir el simulador](https://fcontiggiani.github.io/equilibrio-firmacp-cp/costos_cortoplazo_standalone.html)**
 
