@@ -1,0 +1,1583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulador de costos de corto plazo y equilibrio competitivo</title>
+<style>
+  :root{
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f2f1ed;
+    --page-plane:     #f9f9f7;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #898781;
+    --gridline:       #e1e0d9;
+    --baseline:       #c3c2b7;
+    --border:         rgba(11,11,11,0.10);
+
+    --c-ac:      #2a78d6;   /* CMe */
+    --c-avc:     #1baf7a;   /* CVMe */
+    --c-mc:      #eb6834;   /* CMg */
+    --c-price:   #4a3aa7;   /* precio de mercado / equilibrio */
+    --c-demand:  #2a78d6;   /* demanda */
+    --c-supply:  #eb6834;   /* oferta */
+    --c-profit:  #008300;   /* beneficio positivo */
+    --c-loss:    #e34948;   /* beneficio negativo */
+    --c-ref:     #eda100;   /* curvas / línea de referencia fijada (K₀, P₀) */
+
+    /* áreas sombreadas (fondo del gráfico + transparencia) */
+    --fill-tc:          rgba(11,11,11,0.10);
+    --fill-tr:           rgba(74,58,167,0.16);
+    --fill-profit-strong: rgba(0,131,0,0.30);
+    --fill-loss-strong:   rgba(227,73,72,0.30);
+    --fill-profit-soft:   rgba(0,131,0,0.16);
+    --fill-loss-soft:     rgba(227,73,72,0.16);
+    --fill-cs:           rgba(42,120,214,0.18);
+    --fill-ps:           rgba(235,104,52,0.18);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      color-scheme: dark;
+      --surface-1:      #1a1a19;
+      --surface-2:      #242423;
+      --page-plane:     #0d0d0d;
+      --text-primary:   #ffffff;
+      --text-secondary: #c3c2b7;
+      --text-muted:     #898781;
+      --gridline:       #2c2c2a;
+      --baseline:       #383835;
+      --border:         rgba(255,255,255,0.10);
+
+      --c-ac:      #3987e5;
+      --c-avc:     #199e70;
+      --c-mc:      #d95926;
+      --c-price:   #9085e9;
+      --c-demand:  #3987e5;
+      --c-supply:  #d95926;
+      --c-profit:  #0ca30c;
+      --c-loss:    #e66767;
+      --c-ref:     #c98500;
+
+      --fill-tc:            rgba(255,255,255,0.14);
+      --fill-tr:            rgba(144,133,233,0.24);
+      --fill-profit-strong: rgba(12,163,12,0.32);
+      --fill-loss-strong:   rgba(230,103,103,0.34);
+      --fill-profit-soft:   rgba(12,163,12,0.22);
+      --fill-loss-soft:     rgba(230,103,103,0.22);
+      --fill-cs:            rgba(57,135,229,0.26);
+      --fill-ps:            rgba(217,89,38,0.26);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --surface-1:      #1a1a19;
+    --surface-2:      #242423;
+    --page-plane:     #0d0d0d;
+    --text-primary:   #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted:     #898781;
+    --gridline:       #2c2c2a;
+    --baseline:       #383835;
+    --border:         rgba(255,255,255,0.10);
+
+    --c-ac:      #3987e5;
+    --c-avc:     #199e70;
+    --c-mc:      #d95926;
+    --c-price:   #9085e9;
+    --c-demand:  #3987e5;
+    --c-supply:  #d95926;
+    --c-profit:  #0ca30c;
+    --c-loss:    #e66767;
+    --c-ref:     #c98500;
+
+    --fill-tc:            rgba(255,255,255,0.14);
+    --fill-tr:            rgba(144,133,233,0.24);
+    --fill-profit-strong: rgba(12,163,12,0.32);
+    --fill-loss-strong:   rgba(230,103,103,0.34);
+    --fill-profit-soft:   rgba(12,163,12,0.22);
+    --fill-loss-soft:     rgba(230,103,103,0.22);
+    --fill-cs:            rgba(57,135,229,0.26);
+    --fill-ps:            rgba(217,89,38,0.26);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--page-plane);
+    color:var(--text-primary);
+    font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+    font-size:14px;
+    line-height:1.5;
+  }
+  .wrap{max-width:1360px;margin:0 auto;padding:24px 20px 56px;}
+  header h1{font-size:22px;margin:0 0 4px;}
+  header p.subtitle{margin:0 0 20px;color:var(--text-secondary);max-width:900px;}
+
+  .card{
+    background:var(--surface-1);
+    border:1px solid var(--border);
+    border-radius:12px;
+    padding:16px 18px;
+    margin-bottom:18px;
+  }
+  .card h2{font-size:15px;margin:0 0 4px;}
+  .card p.hint{margin:0 0 14px;color:var(--text-secondary);font-size:12.5px;}
+
+  .controls-row{display:flex;flex-wrap:wrap;gap:18px 26px;align-items:flex-end;}
+  .field{display:flex;flex-direction:column;gap:4px;min-width:150px;}
+  .field label{font-size:12px;color:var(--text-secondary);display:flex;justify-content:space-between;gap:8px;}
+  .field label .val{font-variant-numeric:tabular-nums;color:var(--text-primary);font-weight:600;}
+  .field select{
+    font:inherit;padding:6px 8px;border-radius:8px;border:1px solid var(--baseline);
+    background:var(--surface-1);color:var(--text-primary);
+  }
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:4px;background:var(--baseline);border-radius:2px;}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:15px;height:15px;border-radius:50%;
+    background:var(--c-price);margin-top:-5.5px;border:2px solid var(--surface-1);
+    box-shadow:0 0 0 1px var(--baseline);
+  }
+  input[type=range]::-moz-range-track{height:4px;background:var(--baseline);border-radius:2px;}
+  input[type=range]::-moz-range-thumb{
+    width:15px;height:15px;border-radius:50%;background:var(--c-price);border:2px solid var(--surface-1);
+    box-shadow:0 0 0 1px var(--baseline);
+  }
+
+  .formula{
+    margin-top:10px;padding:9px 12px;background:var(--surface-2);border-radius:8px;
+    font-size:13px;color:var(--text-secondary);
+  }
+  .formula b{color:var(--text-primary);}
+
+  .grid-panels{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  @media (max-width:860px){ .grid-panels{grid-template-columns:1fr;} }
+
+  .panel h2{font-size:15px;margin:0 0 2px;}
+  .panel p.hint{margin:0 0 10px;}
+  canvas{display:block;width:100%;height:auto;background:var(--surface-1);border-radius:8px;}
+
+  .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;}
+  .panel-head h2{flex:1 1 auto;min-width:180px;}
+  .zoom-controls{display:flex;align-items:center;gap:4px;flex:none;}
+  .zoom-controls button{
+    font:inherit;width:26px;height:26px;padding:0;line-height:1;border-radius:6px;
+    border:1px solid var(--baseline);background:var(--surface-1);color:var(--text-primary);
+    cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;
+  }
+  .zoom-controls button:hover{background:var(--surface-2);}
+  .zoom-controls button.reset-zoom{width:auto;padding:0 9px;font-size:11px;}
+  .zoom-controls .zoom-label{font-size:11px;color:var(--text-muted);min-width:36px;text-align:center;font-variant-numeric:tabular-nums;}
+
+  .theme-toggle{
+    font:inherit;padding:7px 14px;border-radius:8px;border:1px solid var(--baseline);
+    background:var(--surface-1);color:var(--text-primary);cursor:pointer;flex:none;
+  }
+  .theme-toggle:hover{background:var(--surface-2);}
+  .header-row{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;}
+
+  .legend{display:flex;flex-wrap:wrap;gap:12px 18px;margin-top:10px;font-size:12.5px;}
+  .legend .item{display:flex;align-items:center;gap:6px;color:var(--text-secondary);}
+  .legend .swatch{width:14px;height:3px;border-radius:2px;flex:none;}
+  .legend .swatch.dash{background-image:linear-gradient(90deg, currentColor 60%, transparent 0);background-size:6px 3px;height:0;border-top:3px dashed currentColor;color:inherit;}
+  .legend .swatch.area{width:12px;height:12px;border-radius:3px;}
+
+  .readout{
+    margin-top:12px;display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+    gap:8px 14px;font-size:12.5px;
+  }
+  .readout .item{background:var(--surface-2);border-radius:8px;padding:7px 10px;}
+  .readout .item .k{color:var(--text-muted);display:block;font-size:11px;margin-bottom:2px;}
+  .readout .item .v{font-variant-numeric:tabular-nums;font-weight:700;font-size:14px;}
+  .readout .item.flag{background:#fdecea;}
+  .readout .item.ok{background:#e9f7ef;}
+
+  .note{margin-top:10px;padding:9px 12px;border-radius:8px;font-size:12.5px;background:var(--surface-2);color:var(--text-secondary);}
+  .note.shutdown{background:#fdecea;color:#7a2b2b;}
+  .note.profit{background:#e9f7ef;color:#175c2e;}
+
+  .bottom-panel{margin-top:18px;}
+
+  footer{margin-top:26px;color:var(--text-muted);font-size:11.5px;line-height:1.6;}
+
+  button.reset{
+    font:inherit;padding:7px 14px;border-radius:8px;border:1px solid var(--baseline);
+    background:var(--surface-1);color:var(--text-primary);cursor:pointer;
+  }
+  button.reset:hover{background:var(--surface-2);}
+
+  button.pin-btn{
+    font:inherit;padding:7px 14px;border-radius:8px;border:1px solid var(--c-ref);
+    background:var(--surface-1);color:var(--c-ref);cursor:pointer;font-weight:600;
+  }
+  button.pin-btn:hover{background:var(--surface-2);}
+  button.pin-btn.active{background:var(--c-ref);color:var(--surface-1);}
+  .ref-hint{font-size:12px;color:var(--text-muted);margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-row">
+      <div>
+        <h1>Costos de corto plazo y equilibrio competitivo</h1>
+        <p class="subtitle">
+          Simulador interactivo para la enseñanza de la derivación de las curvas de costo de corto plazo
+          a partir de distintas funciones de producción, y de la decisión de oferta de una firma
+          tomadora de precios inserta en un mercado de competencia perfecta.
+        </p>
+      </div>
+      <button class="theme-toggle" id="themeToggle" type="button">Tema oscuro</button>
+    </div>
+  </header>
+
+  <!-- ============ CONTROLES DE LA FIRMA ============ -->
+  <div class="card" id="firm-controls">
+    <h2>Tecnología y costos de la firma</h2>
+    <p class="hint">
+      El capital (K) se encuentra fijo en el corto plazo; el trabajo (L) es el factor variable.
+      Cada función de producción reutiliza sus propios parámetros al alternar entre ellas.
+    </p>
+    <div class="controls-row">
+      <div class="field">
+        <label for="prodType">Función de producción</label>
+        <select id="prodType">
+          <option value="cobb_douglas">Cobb-Douglas</option>
+          <option value="leontief">Leontief (proporciones fijas)</option>
+          <option value="perfect_subs">Sustitutos perfectos</option>
+          <option value="ces">CES</option>
+          <option value="cubic">Cúbica (rendimientos crecientes y decrecientes)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="K">Capital fijo (K) <span class="val" id="K-val"></span></label>
+        <input type="range" id="K" min="1" max="20" step="0.5">
+      </div>
+      <div class="field">
+        <label for="w">Salario (w) <span class="val" id="w-val"></span></label>
+        <input type="range" id="w" min="1" max="30" step="0.5">
+      </div>
+      <div class="field">
+        <label for="r">Costo del capital (r) <span class="val" id="r-val"></span></label>
+        <input type="range" id="r" min="1" max="30" step="0.5">
+      </div>
+      <div class="field">
+        <button class="reset" id="resetBtn" type="button">Restablecer valores</button>
+      </div>
+      <div class="field">
+        <button class="pin-btn" id="pinK" type="button">Fijar K actual como referencia</button>
+      </div>
+    </div>
+    <div class="controls-row" id="prodParams" style="margin-top:16px;"></div>
+    <div class="formula" id="prodFormula"></div>
+    <p class="ref-hint" id="refKHint" style="display:none;"></p>
+  </div>
+
+  <!-- ============ CONTROLES DEL MERCADO ============ -->
+  <div class="card" id="market-controls">
+    <h2>Mercado competitivo (oferta y demanda lineales)</h2>
+    <p class="hint">Determinan el precio de equilibrio que la firma, tomadora de precios, enfrenta en el panel izquierdo.</p>
+    <div class="controls-row">
+      <div class="field">
+        <label for="ad">Demanda — ordenada (a<sub>d</sub>) <span class="val" id="ad-val"></span></label>
+        <input type="range" id="ad" min="15" max="150" step="1">
+      </div>
+      <div class="field">
+        <label for="bd">Demanda — pendiente (b<sub>d</sub>) <span class="val" id="bd-val"></span></label>
+        <input type="range" id="bd" min="0.2" max="6" step="0.1">
+      </div>
+      <div class="field">
+        <label for="as">Oferta — ordenada (a<sub>s</sub>) <span class="val" id="as-val"></span></label>
+        <input type="range" id="as" min="0" max="100" step="1">
+      </div>
+      <div class="field">
+        <label for="bs">Oferta — pendiente (b<sub>s</sub>) <span class="val" id="bs-val"></span></label>
+        <input type="range" id="bs" min="0.2" max="6" step="0.1">
+      </div>
+      <div class="field">
+        <button class="pin-btn" id="pinP" type="button">Fijar precio actual como referencia</button>
+      </div>
+    </div>
+    <div class="formula" id="marketFormula"></div>
+    <p class="ref-hint" id="refPHint" style="display:none;"></p>
+  </div>
+
+  <!-- ============ PANELES PRINCIPALES ============ -->
+  <div class="grid-panels">
+
+    <div class="card panel" id="cost-panel">
+      <div class="panel-head">
+        <h2>Costos medios y marginales de la firma</h2>
+        <div class="zoom-controls" id="zoomCost">
+          <button type="button" data-zoom-out title="Alejar">−</button>
+          <span class="zoom-label" id="zoomCost-label">100%</span>
+          <button type="button" data-zoom-in title="Acercar">+</button>
+          <button type="button" class="reset-zoom" data-zoom-reset title="Ajuste automático">Ajustar</button>
+        </div>
+      </div>
+      <p class="hint">CMe, CVMe y CMg en el corto plazo, con el precio de mercado proyectado como recta horizontal.</p>
+      <canvas id="costCanvas" width="620" height="440"></canvas>
+      <div class="legend">
+        <span class="item"><span class="swatch" style="background:var(--c-ac)"></span>Costo medio (CMe)</span>
+        <span class="item"><span class="swatch" style="background:var(--c-avc)"></span>Costo variable medio (CVMe)</span>
+        <span class="item"><span class="swatch" style="background:var(--c-mc)"></span>Costo marginal (CMg)</span>
+        <span class="item"><span class="swatch dash" style="color:var(--c-price)"></span>Precio de mercado (P*)</span>
+        <span class="item"><span class="swatch area" style="background:var(--fill-tr)"></span>Ingreso total (P*×Q*)</span>
+        <span class="item"><span class="swatch area" style="background:var(--fill-tc)"></span>Costo total (CMe×Q*)</span>
+        <span class="item" id="legendRef" style="display:none;"><span class="swatch dash" style="color:var(--c-ref)"></span>Referencia fijada (K₀ y/o P₀)</span>
+      </div>
+      <div class="readout" id="firmReadout"></div>
+      <div class="note" id="firmNote"></div>
+      <div class="note" id="refCompare" style="display:none;"></div>
+    </div>
+
+    <div class="card panel" id="market-panel">
+      <h2>Equilibrio de mercado</h2>
+      <p class="hint">Oferta y demanda lineales; el precio de equilibrio se traslada al panel de la firma.</p>
+      <canvas id="marketCanvas" width="620" height="440"></canvas>
+      <div class="legend">
+        <span class="item"><span class="swatch" style="background:var(--c-demand)"></span>Demanda</span>
+        <span class="item"><span class="swatch" style="background:var(--c-supply)"></span>Oferta</span>
+        <span class="item"><span class="swatch area" style="background:var(--fill-cs)"></span>Excedente del consumidor</span>
+        <span class="item"><span class="swatch area" style="background:var(--fill-ps)"></span>Excedente del productor</span>
+        <span class="item" id="legendRefMarket" style="display:none;"><span class="swatch dash" style="color:var(--c-ref)"></span>Equilibrio y curvas de referencia (P₀)</span>
+      </div>
+      <div class="readout" id="marketReadout"></div>
+      <div class="note" id="marketRefCompare" style="display:none;"></div>
+    </div>
+
+  </div>
+
+  <!-- ============ PANEL DE BENEFICIOS ============ -->
+  <div class="card bottom-panel" id="profit-panel">
+    <div class="panel-head">
+      <h2>Curva de beneficios de la firma, π(Q)</h2>
+      <div class="zoom-controls" id="zoomProfit">
+        <button type="button" data-zoom-out title="Alejar">−</button>
+        <span class="zoom-label" id="zoomProfit-label">100%</span>
+        <button type="button" data-zoom-in title="Acercar">+</button>
+        <button type="button" class="reset-zoom" data-zoom-reset title="Ajuste automático">Ajustar</button>
+      </div>
+    </div>
+    <p class="hint">Beneficio neto π(Q) = P*·Q − CT(Q) para cada nivel de producción, al precio de equilibrio vigente. El máximo se alcanza donde CMg = P* (regla de oferta de la firma competitiva).</p>
+    <canvas id="profitCanvas" width="1260" height="260"></canvas>
+    <div class="legend">
+      <span class="item"><span class="swatch" style="background:var(--c-profit)"></span>π(Q) &gt; 0</span>
+      <span class="item"><span class="swatch" style="background:var(--c-loss)"></span>π(Q) &lt; 0</span>
+      <span class="item"><span class="swatch dash" style="color:var(--c-price)"></span>Q* (óptimo de la firma)</span>
+      <span class="item" id="legendRefProfit" style="display:none;"><span class="swatch dash" style="color:var(--c-ref)"></span>π(Q) con la referencia fijada</span>
+    </div>
+  </div>
+
+  <footer>
+    Material desarrollado con fines exclusivamente didácticos. Los valores numéricos son ilustrativos.
+    El documento es autocontenido (HTML, CSS y JavaScript en un único archivo, sin dependencias externas)
+    y puede abrirse directamente en cualquier navegador moderno o alojarse como recurso estático.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================================================
+   1. MOTOR MATEMÁTICO
+   ------------------------------------------------------------
+   Para cada función de producción q = f(L, K; parámetros) se
+   define únicamente f(L,K,p). A partir de ella, TODO lo demás
+   (inversión L*(Q), costo variable, costo total, CMe, CVMe, CMg)
+   se obtiene de forma genérica por bisección numérica y
+   diferencias finitas. Esto evita álgebra ad-hoc por caso y
+   generaliza a cualquier tecnología que se desee agregar.
+   ============================================================ */
+
+// f(L,K,p) para cada tecnología. L y K estrictamente positivos.
+const Q_FUNCS = {
+  cobb_douglas: (L,K,p) => p.A * Math.pow(K,p.alpha) * Math.pow(Math.max(L,1e-9), p.beta),
+  leontief:     (L,K,p) => Math.min(K/p.vK, L/p.vL),
+  perfect_subs: (L,K,p) => p.a*K + p.b*L,
+  ces: (L,K,p) => {
+    const sigma = p.sigma;
+    const Lval = Math.max(L,1e-9);
+    if (Math.abs(sigma-1) < 0.03){
+      // Límite Cobb-Douglas cuando la elasticidad de sustitución -> 1
+      return p.Ace * Math.pow(K,p.alphaShare) * Math.pow(Lval,1-p.alphaShare);
+    }
+    const rho = (sigma-1)/sigma;
+    const inner = p.alphaShare*Math.pow(K,rho) + (1-p.alphaShare)*Math.pow(Lval,rho);
+    return p.Ace * Math.pow(Math.max(inner,1e-12), 1/rho);
+  },
+  cubic: (L,K,p) => p.A * Math.pow(K,p.theta) * Math.max(0, p.c1*L*L - p.c2*L*L*L)
+};
+
+// Cota superior de búsqueda de L para cada tecnología. Leontief y
+// la cúbica tienen una capacidad máxima genuina de corto plazo
+// dado K (hardCap=true); las demás se truncan arbitrariamente en
+// L=300 solo para acotar el gráfico (hardCap=false), lo cual debe
+// distinguirse al reportar una solución de esquina al usuario.
+function getLBounds(type,K,p){
+  if (type === 'leontief'){
+    return { Llo:1e-6, Lhi: Math.max(p.vL*(K/p.vK), 1e-3), hardCap:true };
+  }
+  if (type === 'cubic'){
+    const Lpeak = 2*p.c1/(3*p.c2);
+    return { Llo:1e-6, Lhi: Math.max(Lpeak,1e-3), hardCap:true };
+  }
+  return { Llo:1e-6, Lhi: 300, hardCap:false };
+}
+
+// Construye la grilla completa de costos de corto plazo.
+//
+// Nota de implementación: la grilla se recorre de forma UNIFORME
+// en L (no en Q). Esto es deliberado: para tecnologías con una
+// capacidad máxima (Leontief, cúbica) el producto marginal del
+// trabajo tiende a cero cerca de esa cota, de modo que dQ/dL -> 0
+// y Q(L) se aplana. Una grilla uniforme en Q exige entonces saltos
+// muy grandes de L en el último tramo, lo que subestima groseramente
+// el costo marginal (una diferencia finita "promediada" sobre un
+// tramo ancho de L) justo donde el CMg debería dispararse. Recorrer
+// L de manera uniforme evita esa distorsión y además evita tener
+// que invertir Q(L) numéricamente.
+// Recibe la tecnología y los parámetros de forma explícita (en vez de
+// leerlos del estado global) para poder recalcular tanto la firma
+// vigente como, cuando corresponda, un escenario de referencia fijado
+// (K₀) con una fotografía independiente de sus propios parámetros.
+function computeCostCurves(type, p, K, w, r){
+  const qFn = Q_FUNCS[type];
+  const { Llo, Lhi, hardCap } = getLBounds(type,K,p);
+  const FC = r*K;
+  const N = 300;
+  const Qgrid=[], TVC=[], TC=[], AC=[], AVC=[];
+
+  for (let i=0;i<N;i++){
+    const t = i/(N-1);
+    const L = Llo + t*(Lhi-Llo);
+    const Q = qFn(L,K,p);
+    const tvc = w*L;
+    const tc = tvc + FC;
+    Qgrid.push(Q); TVC.push(tvc); TC.push(tc);
+    AC.push(tc/Math.max(Q,1e-9));
+    AVC.push(tvc/Math.max(Q,1e-9));
+  }
+
+  const MC = new Array(N);
+  for (let i=0;i<N;i++){
+    if (i===0) MC[i] = (TC[1]-TC[0])/Math.max(Qgrid[1]-Qgrid[0],1e-9);
+    else if (i===N-1) MC[i] = (TC[N-1]-TC[N-2])/Math.max(Qgrid[N-1]-Qgrid[N-2],1e-9);
+    else MC[i] = (TC[i+1]-TC[i-1])/Math.max(Qgrid[i+1]-Qgrid[i-1],1e-9);
+  }
+
+  return { Qgrid, TVC, TC, AC, AVC, MC, Qmin:Qgrid[0], Qmax:Qgrid[N-1], FC, hardCap };
+}
+
+// Elección óptima de la firma tomadora de precios: maximiza
+// π(Q) = P·Q − CT(Q) sobre la grilla, comparando además contra
+// la opción de cierre en el corto plazo (Q=0, se paga solo CF).
+//
+// Si el óptimo hallado cae exactamente en el último punto de la
+// grilla, se marca cornerAtBound=true: puede tratarse de una
+// restricción de capacidad genuina (hardCap=true, p.ej. Leontief
+// o la cúbica en su tope) o de una tecnología cuyo costo marginal
+// no supera al precio dentro del rango numérico explorado
+// (hardCap=false, p.ej. sustitutos perfectos o CES muy sustituible),
+// en cuyo caso no existe óptimo interior y Q* es solo una cota
+// inferior. Ambos casos se señalan explícitamente en la interfaz.
+function computeFirmChoice(cc, P){
+  const { Qgrid, TC, MC, FC } = cc;
+  let bestI = 0, bestProfit = -Infinity;
+  for (let i=0;i<Qgrid.length;i++){
+    const profit = P*Qgrid[i] - TC[i];
+    if (profit > bestProfit){ bestProfit = profit; bestI = i; }
+  }
+  const shutdownProfit = -FC;
+  // Umbral de producción "económicamente nula": el primer tramo de la
+  // grilla corresponde a L casi cero, donde Q -> 0 (o al producto de
+  // solo el capital, con trabajo insignificante). Cualquier candidato
+  // ahí es prácticamente indistinguible de cerrar, y el costo medio se
+  // vuelve numéricamente inestable (división por una cantidad casi
+  // nula). Se lo trata como cierre para evitar reportar un CMe espurio.
+  const minMeaningfulQ = Math.max(cc.Qmax*0.002, 1e-6);
+  if (shutdownProfit >= bestProfit || Qgrid[bestI] < minMeaningfulQ){
+    return { shutdown:true, Qstar:0, TR:0, TCstar:FC, profit:shutdownProfit, ACstar:null, MCstar:null, cornerAtBound:false };
+  }
+  const cornerAtBound = (bestI === Qgrid.length-1);
+  return {
+    shutdown:false, Qstar:Qgrid[bestI], TR:P*Qgrid[bestI], TCstar:TC[bestI],
+    profit:bestProfit, ACstar:TC[bestI]/Qgrid[bestI], MCstar:MC[bestI], index:bestI,
+    cornerAtBound, hardCap:cc.hardCap
+  };
+}
+
+// Curva de beneficios π(Q) sobre toda la grilla (incluye el
+// punto de cierre Q=0 al comienzo, a modo de referencia).
+function computeProfitCurve(cc, P){
+  const pts = [{ Q:0, pi:-cc.FC }];
+  for (let i=0;i<cc.Qgrid.length;i++){
+    pts.push({ Q: cc.Qgrid[i], pi: P*cc.Qgrid[i] - cc.TC[i] });
+  }
+  return pts;
+}
+
+// Equilibrio de mercado con oferta y demanda lineales inversas:
+// P = ad − bd·Q   (demanda)      P = as + bs·Q   (oferta)
+function computeMarket(m){
+  let Qeq = (m.ad - m.as_) / (m.bd + m.bs);
+  let noTrade = false;
+  if (!(Qeq > 0) || m.ad <= m.as_){ Qeq = 0; noTrade = true; }
+  const Peq = noTrade ? null : m.ad - m.bd*Qeq;
+  const CS = noTrade ? 0 : 0.5*m.bd*Qeq*Qeq;
+  const PS = noTrade ? 0 : 0.5*m.bs*Qeq*Qeq;
+  const Ed = noTrade ? null : (Peq/Qeq)*(1/m.bd);
+  const Es = noTrade ? null : (Peq/Qeq)*(1/m.bs);
+  return { Qeq, Peq, CS, PS, Ed, Es, noTrade };
+}
+
+function percentile(arr, frac){
+  const s = arr.slice().sort((a,b)=>a-b);
+  const idx = Math.min(s.length-1, Math.max(0, Math.floor(frac*(s.length-1))));
+  return s[idx];
+}
+
+/* ============================================================
+   2. DEFINICIÓN DE TECNOLOGÍAS Y PARÁMETROS POR DEFECTO
+   ============================================================ */
+
+const PROD_DEFS = {
+  cobb_douglas: {
+    label: 'Cobb-Douglas',
+    formula: (p) => `Q = ${fmt(p.A)}·K^${fmt(p.alpha)}·L^${fmt(p.beta)}`,
+    params: [
+      { key:'A',     label:'Escala (A)',              min:0.5, max:3,   step:0.1, def:1.5 },
+      { key:'alpha', label:'Elasticidad de K (α)',     min:0.1, max:0.9, step:0.05, def:0.30 },
+      { key:'beta',  label:'Elasticidad de L (β)',     min:0.1, max:0.9, step:0.05, def:0.60 }
+    ]
+  },
+  leontief: {
+    label: 'Leontief',
+    formula: (p) => `Q = mín( K / ${fmt(p.vK)} , L / ${fmt(p.vL)} )`,
+    params: [
+      { key:'vK', label:'Requerimiento de K por unidad (vK)', min:0.2, max:3, step:0.1, def:1.0 },
+      { key:'vL', label:'Requerimiento de L por unidad (vL)', min:0.2, max:3, step:0.1, def:1.0 }
+    ]
+  },
+  perfect_subs: {
+    label: 'Sustitutos perfectos',
+    formula: (p) => `Q = ${fmt(p.a)}·K + ${fmt(p.b)}·L`,
+    params: [
+      { key:'a', label:'Productividad de K (a)', min:0.1, max:3, step:0.1, def:1.0 },
+      { key:'b', label:'Productividad de L (b)', min:0.1, max:3, step:0.1, def:1.5 }
+    ]
+  },
+  ces: {
+    label: 'CES',
+    formula: (p) => `Q = ${fmt(p.Ace)}·( ${fmt(p.alphaShare)}·K^ρ + ${fmt(1-p.alphaShare)}·L^ρ )^(1/ρ),  ρ=(σ−1)/σ,  σ=${fmt(p.sigma)}`,
+    params: [
+      { key:'Ace',        label:'Escala (A)',                          min:0.5, max:3,   step:0.1,  def:1.2 },
+      { key:'alphaShare',  label:'Participación de K (α)',              min:0.1, max:0.9, step:0.05, def:0.40 },
+      { key:'sigma',       label:'Elasticidad de sustitución (σ)',      min:0.2, max:4,   step:0.1,  def:0.6 }
+    ]
+  },
+  cubic: {
+    label: 'Cúbica',
+    formula: (p) => `Q = ${fmt(p.A)}·K^${fmt(p.theta)}·( ${fmt(p.c1)}·L² − ${fmt(p.c2)}·L³ )`,
+    params: [
+      { key:'A',     label:'Escala (A)',                    min:0.5,  max:2,   step:0.1,   def:1.0 },
+      { key:'theta', label:'Elasticidad de K (θ)',           min:0.1,  max:0.9, step:0.05,  def:0.5 },
+      { key:'c1',    label:'Coeficiente cuadrático (c₁)',    min:0.3,  max:2,   step:0.05,  def:0.9 },
+      { key:'c2',    label:'Coeficiente cúbico (c₂)',        min:0.01, max:0.1, step:0.005, def:0.03 }
+    ]
+  }
+};
+
+function fmt(x, d){
+  if (x===null || x===undefined || !isFinite(x)) return '—';
+  const dec = (d===undefined) ? (Math.abs(x)<10?2:1) : d;
+  return Number(x).toLocaleString('es-AR', { minimumFractionDigits:dec, maximumFractionDigits:dec });
+}
+
+/* ============================================================
+   3. ESTADO GLOBAL
+   ============================================================ */
+
+const state = {
+  prodType: 'cobb_douglas',
+  K: 5, w: 10, r: 8,
+  paramsByType: {},
+  market: { ad:60, bd:1.5, as_:10, bs:1.2 },
+  // Nivel de zoom por panel: 1 = ajuste automático (autofit). Valores
+  // menores a 1 acercan (rango visible más chico); mayores a 1 alejan.
+  // Cada panel se controla de forma independiente.
+  zoom: { cost: 1, profit: 1 },
+  // Referencia fijada para comparar un cambio (ver sección 8):
+  //  - refK: fotografía {prodType, params, K, w, r} tomada al fijarla,
+  //    o null si no hay referencia de capital/tecnología activa.
+  //  - refP: fotografía COMPLETA del mercado en el momento de fijarla
+  //    ({ad, bd, as_, bs, Qeq, Peq}), o null si no hay referencia de
+  //    precio activa. Se conserva el mercado entero (no solo P) para
+  //    poder superponer también las curvas de oferta y demanda
+  //    anteriores, y el punto de equilibrio anterior con sus
+  //    coordenadas, en el panel de equilibrio de mercado.
+  refK: null,
+  refP: null
+};
+const ZOOM_MIN = 0.15, ZOOM_MAX = 4, ZOOM_STEP = 0.8;
+Object.keys(PROD_DEFS).forEach(type=>{
+  const obj = {};
+  PROD_DEFS[type].params.forEach(pp=>{ obj[pp.key]=pp.def; });
+  state.paramsByType[type] = obj;
+});
+
+/* ============================================================
+   4. CONSTRUCCIÓN DE CONTROLES
+   ============================================================ */
+
+const el = (id)=>document.getElementById(id);
+
+function bindSimpleSlider(id, stateKey, formatDec){
+  const input = el(id), label = el(id+'-val');
+  input.value = state[stateKey];
+  label.textContent = fmt(state[stateKey], formatDec);
+  input.addEventListener('input', ()=>{
+    state[stateKey] = parseFloat(input.value);
+    label.textContent = fmt(state[stateKey], formatDec);
+    recomputeAndDraw();
+  });
+}
+
+function bindMarketSlider(id, marketKey, formatDec){
+  const input = el(id), label = el(id+'-val');
+  input.value = state.market[marketKey];
+  label.textContent = fmt(state.market[marketKey], formatDec);
+  input.addEventListener('input', ()=>{
+    state.market[marketKey] = parseFloat(input.value);
+    label.textContent = fmt(state.market[marketKey], formatDec);
+    recomputeAndDraw();
+  });
+}
+
+function renderProdParams(){
+  const container = el('prodParams');
+  container.innerHTML = '';
+  const def = PROD_DEFS[state.prodType];
+  const p = state.paramsByType[state.prodType];
+  def.params.forEach(pp=>{
+    const field = document.createElement('div');
+    field.className = 'field';
+    const label = document.createElement('label');
+    label.setAttribute('for', 'prm_'+pp.key);
+    const valSpan = document.createElement('span');
+    valSpan.className = 'val';
+    valSpan.id = 'prm_'+pp.key+'-val';
+    valSpan.textContent = fmt(p[pp.key]);
+    label.textContent = pp.label + ' ';
+    label.appendChild(valSpan);
+    const input = document.createElement('input');
+    input.type = 'range';
+    input.id = 'prm_'+pp.key;
+    input.min = pp.min; input.max = pp.max; input.step = pp.step;
+    input.value = p[pp.key];
+    input.addEventListener('input', ()=>{
+      p[pp.key] = parseFloat(input.value);
+      valSpan.textContent = fmt(p[pp.key]);
+      updateFormula();
+      recomputeAndDraw();
+    });
+    field.appendChild(label);
+    field.appendChild(input);
+    container.appendChild(field);
+  });
+  updateFormula();
+}
+
+function updateFormula(){
+  const def = PROD_DEFS[state.prodType];
+  const p = state.paramsByType[state.prodType];
+  el('prodFormula').innerHTML = '<b>Función de producción de corto plazo:</b> ' + def.formula(p);
+}
+
+function updateMarketFormula(){
+  const m = state.market;
+  el('marketFormula').innerHTML =
+    '<b>Demanda:</b> P = ' + fmt(m.ad) + ' − ' + fmt(m.bd) + '·Q &nbsp;&nbsp;·&nbsp;&nbsp; ' +
+    '<b>Oferta:</b> P = ' + fmt(m.as_) + ' + ' + fmt(m.bs) + '·Q';
+}
+
+el('prodType').value = state.prodType;
+el('prodType').addEventListener('change', ()=>{
+  state.prodType = el('prodType').value;
+  renderProdParams();
+  recomputeAndDraw();
+});
+
+bindSimpleSlider('K','K',2);
+bindSimpleSlider('w','w',1);
+bindSimpleSlider('r','r',1);
+bindMarketSlider('ad','ad',0);
+bindMarketSlider('bd','bd',2);
+bindMarketSlider('as','as_',0);
+bindMarketSlider('bs','bs',2);
+
+el('resetBtn').addEventListener('click', ()=>{
+  state.prodType = 'cobb_douglas';
+  state.K = 5; state.w = 10; state.r = 8;
+  Object.keys(PROD_DEFS).forEach(type=>{
+    const obj = {};
+    PROD_DEFS[type].params.forEach(pp=>{ obj[pp.key]=pp.def; });
+    state.paramsByType[type] = obj;
+  });
+  state.market = { ad:60, bd:1.5, as_:10, bs:1.2 };
+  state.refK = null;
+  state.refP = null;
+
+  el('prodType').value = state.prodType;
+  el('K').value = state.K; el('K-val').textContent = fmt(state.K,2);
+  el('w').value = state.w; el('w-val').textContent = fmt(state.w,1);
+  el('r').value = state.r; el('r-val').textContent = fmt(state.r,1);
+  el('ad').value = state.market.ad; el('ad-val').textContent = fmt(state.market.ad,0);
+  el('bd').value = state.market.bd; el('bd-val').textContent = fmt(state.market.bd,2);
+  el('as').value = state.market.as_; el('as-val').textContent = fmt(state.market.as_,0);
+  el('bs').value = state.market.bs; el('bs-val').textContent = fmt(state.market.bs,2);
+
+  renderProdParams();
+  updateMarketFormula();
+  updateRefUI();
+  recomputeAndDraw();
+});
+
+/* ------------------------------------------------------------
+   Referencia fijada, para comparar un cambio ("antes / después").
+   Dos anclas independientes:
+     - K₀: fotografía completa de la tecnología, K, w y r vigentes
+       al momento de fijarla.
+     - P₀: precio de equilibrio de mercado vigente al momento de
+       fijarlo.
+   Ambas pueden estar activas a la vez; cada botón alterna entre
+   fijar y quitar su propia referencia. El motor de cálculo vuelve a
+   evaluar la referencia fijada en cada redibujo (recomputeAndDraw),
+   por lo que aquí solo se guarda la fotografía de parámetros.
+   ------------------------------------------------------------ */
+function updateRefUI(){
+  const pinKBtn = el('pinK'), pinPBtn = el('pinP');
+  const hintK = el('refKHint'), hintP = el('refPHint');
+  if (state.refK){
+    const k = state.refK;
+    pinKBtn.textContent = 'Quitar referencia de K';
+    pinKBtn.classList.add('active');
+    hintK.style.display = '';
+    hintK.textContent = 'Referencia fijada: K₀ = '+fmt(k.K,2)+' ('+PROD_DEFS[k.prodType].label+
+      ', w='+fmt(k.w,1)+', r='+fmt(k.r,1)+'). Las curvas de costo con K₀ se superponen en el panel de costos, evaluadas al precio de mercado vigente.';
+  } else {
+    pinKBtn.textContent = 'Fijar K actual como referencia';
+    pinKBtn.classList.remove('active');
+    hintK.style.display = 'none';
+  }
+  if (state.refP !== null){
+    const rp = state.refP;
+    pinPBtn.textContent = 'Quitar referencia de precio';
+    pinPBtn.classList.add('active');
+    hintP.style.display = '';
+    hintP.textContent = 'Referencia fijada: equilibrio anterior (Q₀ = '+fmt(rp.Qeq,2)+', P₀ = '+fmt(rp.Peq,2)+
+      '). Se proyecta como recta horizontal adicional en el panel de costos (junto con la elección óptima de la firma a ese precio), y como punto y curvas de oferta y demanda punteadas en el panel de equilibrio de mercado, para contrastar contra los valores vigentes.';
+  } else {
+    pinPBtn.textContent = 'Fijar precio actual como referencia';
+    pinPBtn.classList.remove('active');
+    hintP.style.display = 'none';
+  }
+}
+
+el('pinK').addEventListener('click', ()=>{
+  if (state.refK){
+    state.refK = null;
+  } else {
+    state.refK = {
+      prodType: state.prodType,
+      params: Object.assign({}, state.paramsByType[state.prodType]),
+      K: state.K, w: state.w, r: state.r
+    };
+  }
+  updateRefUI();
+  recomputeAndDraw();
+});
+
+el('pinP').addEventListener('click', ()=>{
+  if (state.refP !== null){
+    state.refP = null;
+  } else {
+    const m = computeMarket(state.market);
+    if (m.noTrade || m.Peq===null){
+      // No hay equilibrio definido: no hay precio ni curvas que fijar.
+      return;
+    }
+    // Fotografía completa del mercado vigente: parámetros de oferta y
+    // demanda más el equilibrio resultante, para poder redibujar las
+    // curvas anteriores (punteadas) y el punto anterior en el panel de
+    // equilibrio de mercado, además de proyectar P₀ en el panel de costos.
+    state.refP = {
+      ad: state.market.ad, bd: state.market.bd,
+      as_: state.market.as_, bs: state.market.bs,
+      Qeq: m.Qeq, Peq: m.Peq
+    };
+  }
+  updateRefUI();
+  recomputeAndDraw();
+});
+
+renderProdParams();
+updateMarketFormula();
+updateRefUI();
+
+/* ------------------------------------------------------------
+   Tema claro / oscuro. Por defecto se respeta la preferencia del
+   sistema operativo (prefers-color-scheme); el botón fija una
+   preferencia explícita para el resto de la sesión (no se persiste
+   entre recargas). Los colores de los gráficos se leen en cada
+   redibujo desde las variables CSS, por lo que basta con recalcular
+   y volver a dibujar tras el cambio.
+   ------------------------------------------------------------ */
+const prefersDarkMQ = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+let currentTheme = (prefersDarkMQ && prefersDarkMQ.matches) ? 'dark' : 'light';
+
+function applyThemeButtonLabel(){
+  el('themeToggle').textContent = (currentTheme === 'dark') ? 'Tema claro' : 'Tema oscuro';
+}
+el('themeToggle').addEventListener('click', ()=>{
+  currentTheme = (currentTheme === 'dark') ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', currentTheme);
+  applyThemeButtonLabel();
+  recomputeAndDraw();
+});
+applyThemeButtonLabel();
+
+/* ------------------------------------------------------------
+   Controles de zoom (independientes para el panel de costos y el
+   de beneficios). El zoom escala el rango visible de los ejes en
+   torno al ajuste automático (autofit); no cambia los datos.
+   ------------------------------------------------------------ */
+function wireZoomControls(containerId, zoomKey){
+  const box = el(containerId);
+  const label = el(containerId+'-label');
+  function refreshLabel(){ label.textContent = Math.round(100/state.zoom[zoomKey]) + '%'; }
+  box.querySelector('[data-zoom-in]').addEventListener('click', ()=>{
+    state.zoom[zoomKey] = Math.max(ZOOM_MIN, state.zoom[zoomKey]*ZOOM_STEP);
+    refreshLabel(); recomputeAndDraw();
+  });
+  box.querySelector('[data-zoom-out]').addEventListener('click', ()=>{
+    state.zoom[zoomKey] = Math.min(ZOOM_MAX, state.zoom[zoomKey]/ZOOM_STEP);
+    refreshLabel(); recomputeAndDraw();
+  });
+  box.querySelector('[data-zoom-reset]').addEventListener('click', ()=>{
+    state.zoom[zoomKey] = 1;
+    refreshLabel(); recomputeAndDraw();
+  });
+  refreshLabel();
+}
+wireZoomControls('zoomCost','cost');
+wireZoomControls('zoomProfit','profit');
+
+/* ============================================================
+   5. UTILIDADES DE DIBUJO EN CANVAS
+   ============================================================ */
+
+function setupCanvas(canvas){
+  const cssW = canvas.getBoundingClientRect().width || canvas.width;
+  const cssH = canvas.height / canvas.width * cssW;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.style.height = cssH + 'px';
+  const targetW = Math.round(cssW*dpr), targetH = Math.round(cssH*dpr);
+  if (canvas._pxW !== targetW || canvas._pxH !== targetH){
+    canvas.width = targetW; canvas.height = targetH;
+    canvas._pxW = targetW; canvas._pxH = targetH;
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w: cssW, h: cssH };
+}
+
+// Rectángulo de trazado dentro del canvas, dejando margen para ejes/etiquetas.
+function plotRect(w,h){ return { x0:56, y0:14, x1:w-18, y1:h-40 }; }
+
+// Recorta el contexto al área de trazado: necesario porque el zoom por
+// panel puede dejar curvas, áreas o marcas fuera del rango visible, y
+// sin recorte se dibujarían por encima de los ejes o del margen.
+function clipToRect(ctx, rect){
+  ctx.beginPath();
+  ctx.rect(rect.x0, rect.y0, rect.x1-rect.x0, rect.y1-rect.y0);
+  ctx.clip();
+}
+
+function mapX(Q,xMax,rect){ return rect.x0 + (Q/xMax)*(rect.x1-rect.x0); }
+function mapY(V,yMax,rect){ return rect.y1 - (V/yMax)*(rect.y1-rect.y0); }
+
+function niceStep(range, targetTicks){
+  const raw = range/targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(raw)));
+  const norm = raw/mag;
+  let step;
+  if (norm<1.5) step=1; else if (norm<3) step=2; else if (norm<7) step=5; else step=10;
+  return step*mag;
+}
+
+function drawAxes(ctx, rect, xMax, yMax, xLabel, yLabel){
+  ctx.save();
+  ctx.strokeStyle = getVar('--gridline');
+  ctx.fillStyle = getVar('--text-muted');
+  ctx.font = '11px system-ui,-apple-system,sans-serif';
+  ctx.lineWidth = 1;
+
+  const xStep = niceStep(xMax,6), yStep = niceStep(yMax,6);
+  // gridlines + y ticks
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for (let v=0; v<=yMax+1e-9; v+=yStep){
+    const y = mapY(v,yMax,rect);
+    ctx.beginPath(); ctx.moveTo(rect.x0,y); ctx.lineTo(rect.x1,y); ctx.stroke();
+    ctx.fillText(fmt(v,0), rect.x0-8, y);
+  }
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for (let v=0; v<=xMax+1e-9; v+=xStep){
+    const x = mapX(v,xMax,rect);
+    ctx.fillText(fmt(v,0), x, rect.y1+6);
+  }
+
+  // ejes
+  ctx.strokeStyle = getVar('--baseline');
+  ctx.beginPath(); ctx.moveTo(rect.x0,rect.y0); ctx.lineTo(rect.x0,rect.y1); ctx.lineTo(rect.x1,rect.y1); ctx.stroke();
+
+  ctx.fillStyle = getVar('--text-secondary');
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillText(xLabel, (rect.x0+rect.x1)/2, rect.y1+28);
+  ctx.save();
+  ctx.translate(14, (rect.y0+rect.y1)/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.textAlign='center';
+  ctx.fillText(yLabel, 0, 0);
+  ctx.restore();
+  ctx.restore();
+}
+
+function drawSeries(ctx, pts, xMax, yMax, rect, color, width, dash){
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = width||2.4; ctx.lineJoin='round'; ctx.lineCap='round';
+  if (dash) ctx.setLineDash(dash);
+  ctx.beginPath();
+  let started=false;
+  pts.forEach(pt=>{
+    const y = mapY(Math.min(pt.y,yMax*1.06), yMax, rect);
+    const x = mapX(pt.x, xMax, rect);
+    if (y < rect.y0-40) return; // recorta asíntotas verticales fuera de rango
+    if (!started){ ctx.moveTo(x,y); started=true; } else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDot(ctx, Qv, Vv, xMax, yMax, rect, color, r){
+  const x = mapX(Qv,xMax,rect), y = mapY(Math.min(Vv,yMax),yMax,rect);
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x,y,r||4.5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle = getVar('--surface-1'); ctx.lineWidth=1.6; ctx.stroke();
+  ctx.restore();
+}
+
+function dashedHLine(ctx, Vv, xMax, yMax, rect, color, label, dash, labelPos){
+  const y = mapY(Vv, yMax, rect);
+  if (y < rect.y0-2 || y > rect.y1+2) return;
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.setLineDash(dash||[5,4]);
+  ctx.beginPath(); ctx.moveTo(rect.x0,y); ctx.lineTo(rect.x1,y); ctx.stroke();
+  ctx.setLineDash([]);
+  if (label){
+    ctx.fillStyle = color; ctx.font='11px system-ui,-apple-system,sans-serif';
+    ctx.textBaseline='bottom';
+    if (labelPos==='left'){ ctx.textAlign='left'; ctx.fillText(label, rect.x0+6, y-3); }
+    else { ctx.textAlign='left'; ctx.fillText(label, rect.x1-70, y-3); }
+  }
+  ctx.restore();
+}
+
+function dashedVLine(ctx, Qv, xMax, yMax, rect, color, label){
+  const x = mapX(Qv, xMax, rect);
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.setLineDash([5,4]);
+  ctx.beginPath(); ctx.moveTo(x,rect.y0); ctx.lineTo(x,rect.y1); ctx.stroke();
+  ctx.setLineDash([]);
+  if (label){
+    ctx.fillStyle = color; ctx.font='11px system-ui,-apple-system,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='bottom';
+    ctx.fillText(label, x, rect.y0+12);
+  }
+  ctx.restore();
+}
+
+/* ============================================================
+   6. DIBUJO DE LOS TRES PANELES
+   ============================================================ */
+
+function drawCostPanel(cc, market, choice, ref){
+  const canvas = el('costCanvas');
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+  const rect = plotRect(w,h);
+
+  const zoomC = state.zoom.cost;
+  const hasRefK = !!(ref && ref.cc0);
+  const hasRefP = !!(ref && ref.refP!==null && ref.refP!==undefined);
+  const xMaxBase = Math.max(cc.Qmax, hasRefK ? ref.cc0.Qmax : 0)*1.04;
+  const xMax = xMaxBase*zoomC;
+  const mcCap = percentile(cc.MC, 0.9)*1.35;
+  const mcCapRef = hasRefK ? percentile(ref.cc0.MC, 0.9)*1.35 : 0;
+  const acRef = hasRefK ? percentile(ref.cc0.AC,0.95)*1.2 : 0;
+  const yMax = Math.max(
+    (market.Peq||0)*1.25,
+    hasRefP ? ref.refP*1.25 : 0,
+    percentile(cc.AC,0.95)*1.2,
+    acRef,
+    mcCap,
+    mcCapRef,
+    5
+  )*zoomC;
+
+  drawAxes(ctx, rect, xMax, yMax, 'Cantidad (Q)', 'Costo / precio ($)');
+
+  // A partir de aquí, todo el contenido de datos se recorta al área de
+  // trazado: con zoom aplicado, curvas, áreas y marcas pueden exceder
+  // el rango visible y no deben dibujarse sobre los ejes ni el margen.
+  ctx.save();
+  clipToRect(ctx, rect);
+
+  // Áreas: costo total (bajo CMe hasta Q*) e ingreso total (bajo P* hasta Q*)
+  if (!choice.shutdown && choice.Qstar>0){
+    const xQ = mapX(choice.Qstar, xMax, rect);
+    const yAC = mapY(Math.min(choice.ACstar,yMax), yMax, rect);
+    const yP  = mapY(Math.min(market.Peq,yMax), yMax, rect);
+    const yBase = rect.y1;
+
+    // CT: rectángulo bajo CMe(Q*)
+    ctx.save();
+    ctx.fillStyle = getVar('--fill-tc');
+    ctx.fillRect(rect.x0, yAC, xQ-rect.x0, yBase-yAC);
+    ctx.restore();
+
+    // IT: rectángulo bajo P*
+    ctx.save();
+    ctx.fillStyle = getVar('--fill-tr');
+    ctx.fillRect(rect.x0, yP, xQ-rect.x0, yBase-yP);
+    ctx.restore();
+
+    // Franja de beneficio neto: diferencia entre P* y CMe(Q*) a lo ancho de Q*
+    const yTop = Math.min(yAC,yP), yBot = Math.max(yAC,yP);
+    ctx.save();
+    ctx.fillStyle = (market.Peq >= choice.ACstar) ? getVar('--fill-profit-strong') : getVar('--fill-loss-strong');
+    ctx.fillRect(rect.x0, yTop, xQ-rect.x0, Math.max(yBot-yTop,1));
+    ctx.restore();
+  }
+
+  // Curvas
+  const ptsAC  = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AC[i]}));
+  const ptsAVC = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.AVC[i]}));
+  const ptsMC  = cc.Qgrid.map((Q,i)=>({x:Q,y:cc.MC[i]}));
+  drawSeries(ctx, ptsAVC, xMax, yMax, rect, getVar('--c-avc'));
+  drawSeries(ctx, ptsAC,  xMax, yMax, rect, getVar('--c-ac'));
+  drawSeries(ctx, ptsMC,  xMax, yMax, rect, getVar('--c-mc'));
+
+  // Curvas de referencia: costo medio y marginal correspondientes a la
+  // tecnología/K/w/r fijados como K₀, evaluadas al precio de mercado
+  // vigente (permiten comparar "misma firma, distinto K" al precio de hoy).
+  if (hasRefK){
+    const colRef = getVar('--c-ref');
+    const ptsACref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.AC[i]}));
+    const ptsMCref = ref.cc0.Qgrid.map((Q,i)=>({x:Q,y:ref.cc0.MC[i]}));
+    drawSeries(ctx, ptsACref, xMax, yMax, rect, colRef, 1.8, [6,3]);
+    drawSeries(ctx, ptsMCref, xMax, yMax, rect, colRef, 1.8, [2,3]);
+    if (ref.choiceRefK && !ref.choiceRefK.shutdown && ref.choiceRefK.Qstar>0){
+      drawDot(ctx, ref.choiceRefK.Qstar, ref.choiceRefK.MCstar, xMax, yMax, rect, colRef, 3.6);
+    }
+  }
+
+  // Precio de mercado
+  if (market.Peq!==null){
+    dashedHLine(ctx, market.Peq, xMax, yMax, rect, getVar('--c-price'), 'P*');
+  }
+
+  // Precio de referencia P₀ (fijado en un momento anterior), evaluado
+  // contra las curvas de costo ACTUALES de la firma: muestra qué habría
+  // elegido la firma de hoy si el precio siguiera siendo P₀.
+  if (hasRefP){
+    const colRef = getVar('--c-ref');
+    dashedHLine(ctx, ref.refP, xMax, yMax, rect, colRef, 'P₀', [3,3], 'left');
+    if (ref.choiceRefP && !ref.choiceRefP.shutdown && ref.choiceRefP.Qstar>0){
+      drawDot(ctx, ref.choiceRefP.Qstar, ref.choiceRefP.MCstar, xMax, yMax, rect, colRef, 3.6);
+    }
+  }
+
+  // Punto óptimo de la firma
+  if (!choice.shutdown && choice.Qstar>0){
+    dashedVLine(ctx, choice.Qstar, xMax, yMax, rect, getVar('--c-price'), null);
+    drawDot(ctx, choice.Qstar, choice.MCstar, xMax, yMax, rect, getVar('--c-price'));
+    const xQ2 = mapX(choice.Qstar,xMax,rect);
+    const nearRightEdge = xQ2 > rect.x1-72;
+    ctx.save();
+    ctx.fillStyle = getVar('--c-price'); ctx.font='11px system-ui,-apple-system,sans-serif';
+    ctx.textAlign = nearRightEdge ? 'right' : 'left';
+    ctx.textBaseline='bottom';
+    ctx.fillText('Q* = '+fmt(choice.Qstar,2), xQ2+(nearRightEdge?-6:6), mapY(choice.MCstar,yMax,rect)-4);
+    ctx.restore();
+  }
+
+  ctx.restore(); // fin del recorte al área de trazado
+}
+
+function drawMarketPanel(market, ref){
+  const canvas = el('marketCanvas');
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+  const rect = plotRect(w,h);
+  const m = state.market;
+
+  const hasRefM = !!(ref && ref.refMarket);
+  const rm = hasRefM ? ref.refMarket : null;
+
+  const xViewMaxLive = market.noTrade ? Math.max((m.ad-m.as_)/(m.bd+m.bs)+10,10) : market.Qeq*1.55;
+  const xViewMax = Math.max(xViewMaxLive, hasRefM ? rm.Qeq*1.55 : 0);
+  const supplyAtView = m.as_ + m.bs*xViewMax;
+  const supplyAtViewRef = hasRefM ? rm.as_ + rm.bs*xViewMax : 0;
+  const yMax = Math.max(m.ad, supplyAtView, hasRefM?rm.ad:0, supplyAtViewRef, 5) * 1.05;
+
+  drawAxes(ctx, rect, xViewMax, yMax, 'Cantidad (Q)', 'Precio ($)');
+
+  // Excedentes sombreados
+  if (!market.noTrade){
+    const xEq = mapX(market.Qeq, xViewMax, rect);
+    const yEq = mapY(market.Peq, yMax, rect);
+    const yAd = mapY(Math.min(m.ad,yMax), yMax, rect);
+    const yAs = mapY(Math.min(m.as_,yMax), yMax, rect);
+
+    // Excedente del consumidor: triángulo entre demanda y P*
+    ctx.save();
+    ctx.fillStyle = getVar('--fill-cs');
+    ctx.beginPath();
+    ctx.moveTo(rect.x0, yAd);
+    ctx.lineTo(xEq, yEq);
+    ctx.lineTo(rect.x0, yEq);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+
+    // Excedente del productor: triángulo entre P* y oferta
+    ctx.save();
+    ctx.fillStyle = getVar('--fill-ps');
+    ctx.beginPath();
+    ctx.moveTo(rect.x0, yAs);
+    ctx.lineTo(xEq, yEq);
+    ctx.lineTo(rect.x0, yEq);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  // Curvas de oferta y demanda
+  const demandPts = [{x:0,y:m.ad},{x:xViewMax,y:Math.max(m.ad-m.bd*xViewMax,0)}];
+  const supplyPts = [{x:0,y:m.as_},{x:xViewMax,y:m.as_+m.bs*xViewMax}];
+  drawSeries(ctx, demandPts, xViewMax, yMax, rect, getVar('--c-demand'));
+  drawSeries(ctx, supplyPts, xViewMax, yMax, rect, getVar('--c-supply'));
+
+  if (!market.noTrade){
+    dashedHLine(ctx, market.Peq, xViewMax, yMax, rect, getVar('--c-price'), null);
+    dashedVLine(ctx, market.Qeq, xViewMax, yMax, rect, getVar('--c-price'), null);
+    drawDot(ctx, market.Qeq, market.Peq, xViewMax, yMax, rect, getVar('--c-price'));
+    const xEq2 = mapX(market.Qeq,xViewMax,rect);
+    const nearRightEdgeM = xEq2 > rect.x1-115;
+    ctx.save();
+    ctx.fillStyle = getVar('--c-price'); ctx.font='11.5px system-ui,-apple-system,sans-serif';
+    ctx.textAlign = nearRightEdgeM ? 'right' : 'left';
+    ctx.textBaseline='bottom';
+    ctx.fillText('(Q*='+fmt(market.Qeq,1)+', P*='+fmt(market.Peq,1)+')',
+      xEq2+(nearRightEdgeM?-8:8), mapY(market.Peq,yMax,rect)-6);
+    ctx.restore();
+  } else {
+    ctx.save();
+    ctx.fillStyle = getVar('--c-loss'); ctx.font='13px system-ui,-apple-system,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('No existe comercio: la ordenada de oferta supera a la de demanda',
+      (rect.x0+rect.x1)/2, (rect.y0+rect.y1)/2);
+    ctx.restore();
+  }
+
+  // Curvas de oferta y demanda de referencia (equilibrio anterior, fijado
+  // por el usuario mediante "Fijar precio actual como referencia"),
+  // punteadas en color ámbar, con el punto de equilibrio anterior y sus
+  // coordenadas (Q₀, P₀), para contrastar visualmente contra las curvas
+  // y el equilibrio vigentes.
+  if (hasRefM){
+    const colRef = getVar('--c-ref');
+    const demandPtsRef = [{x:0,y:rm.ad},{x:xViewMax,y:Math.max(rm.ad-rm.bd*xViewMax,0)}];
+    const supplyPtsRef = [{x:0,y:rm.as_},{x:xViewMax,y:rm.as_+rm.bs*xViewMax}];
+    drawSeries(ctx, demandPtsRef, xViewMax, yMax, rect, colRef, 1.8, [6,3]);
+    drawSeries(ctx, supplyPtsRef, xViewMax, yMax, rect, colRef, 1.8, [2,3]);
+    dashedHLine(ctx, rm.Peq, xViewMax, yMax, rect, colRef, null, [2,3]);
+    dashedVLine(ctx, rm.Qeq, xViewMax, yMax, rect, colRef, null);
+    drawDot(ctx, rm.Qeq, rm.Peq, xViewMax, yMax, rect, colRef, 3.8);
+    const xEqR = mapX(rm.Qeq, xViewMax, rect);
+    const nearRightEdgeR = xEqR > rect.x1-125;
+    ctx.save();
+    ctx.fillStyle = colRef; ctx.font='11.5px system-ui,-apple-system,sans-serif';
+    ctx.textAlign = nearRightEdgeR ? 'right' : 'left';
+    ctx.textBaseline='top';
+    ctx.fillText('(Q₀='+fmt(rm.Qeq,1)+', P₀='+fmt(rm.Peq,1)+')',
+      xEqR+(nearRightEdgeR?-8:8), mapY(rm.Peq,yMax,rect)+6);
+    ctx.restore();
+  }
+}
+
+function drawProfitPanel(profitPts, choice, ref){
+  const canvas = el('profitCanvas');
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0,0,w,h);
+  const rect = plotRect(w,h);
+  rect.y0 = 10; rect.y1 = h-38;
+
+  const hasRefK = !!(ref && ref.profitPtsRefK);
+  const hasRefP = !!(ref && ref.profitPtsRefP);
+
+  const zoomP = state.zoom.profit;
+  const xMaxNatural = Math.max(
+    profitPts[profitPts.length-1].Q,
+    hasRefK ? ref.profitPtsRefK[ref.profitPtsRefK.length-1].Q : 0,
+    hasRefP ? ref.profitPtsRefP[ref.profitPtsRefP.length-1].Q : 0
+  )*1.02;
+  const piVals = profitPts.map(pt=>pt.pi)
+    .concat(hasRefK ? ref.profitPtsRefK.map(pt=>pt.pi) : [])
+    .concat(hasRefP ? ref.profitPtsRefP.map(pt=>pt.pi) : []);
+  const piMax = Math.max(...piVals), piMin = Math.min(...piVals);
+  const span = Math.max(piMax-piMin, 10);
+  const yMaxNatural = piMax + span*0.12;
+  const yMinNatural = piMin - span*0.12;
+
+  // El zoom escala ambos ejes en torno al centro del ajuste automático.
+  const xMax = xMaxNatural*zoomP;
+  const yCenter = (yMaxNatural+yMinNatural)/2;
+  const yHalfSpan = (yMaxNatural-yMinNatural)/2*zoomP;
+  const yMax = yCenter+yHalfSpan, yMin = yCenter-yHalfSpan;
+
+  // eje y con cero visible: remapear manualmente
+  function mapYp(v){ return rect.y1 - ((v-yMin)/(yMax-yMin))*(rect.y1-rect.y0); }
+  function mapXp(Q){ return rect.x0 + (Q/xMax)*(rect.x1-rect.x0); }
+
+  // grilla y etiquetas y
+  ctx.save();
+  ctx.strokeStyle = getVar('--gridline'); ctx.fillStyle=getVar('--text-muted'); ctx.font='11px system-ui,-apple-system,sans-serif';
+  const yStep = niceStep(yMax-yMin, 5);
+  ctx.textAlign='right'; ctx.textBaseline='middle';
+  for (let v=Math.ceil(yMin/yStep)*yStep; v<=yMax; v+=yStep){
+    const y = mapYp(v);
+    ctx.beginPath(); ctx.moveTo(rect.x0,y); ctx.lineTo(rect.x1,y); ctx.stroke();
+    ctx.fillText(fmt(v,0), rect.x0-8, y);
+  }
+  const xStep = niceStep(xMax,7);
+  ctx.textAlign='center'; ctx.textBaseline='top';
+  for (let v=0; v<=xMax; v+=xStep){
+    ctx.fillText(fmt(v,0), mapXp(v), rect.y1+6);
+  }
+  ctx.restore();
+
+  // línea de cero (eje horizontal de referencia)
+  ctx.save();
+  ctx.strokeStyle = getVar('--baseline'); ctx.lineWidth=1.4;
+  const y0 = mapYp(0);
+  ctx.beginPath(); ctx.moveTo(rect.x0,y0); ctx.lineTo(rect.x1,y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(rect.x0,rect.y0); ctx.lineTo(rect.x0,rect.y1); ctx.stroke();
+  ctx.restore();
+
+  // A partir de aquí, el contenido de datos se recorta al área de
+  // trazado (ver nota en drawCostPanel).
+  ctx.save();
+  clipToRect(ctx, rect);
+
+  // área rellena por tramos: verde si pi>0, rojo si pi<0
+  for (let i=0;i<profitPts.length-1;i++){
+    const p0=profitPts[i], p1=profitPts[i+1];
+    const positive = (p0.pi+p1.pi)/2 >= 0;
+    ctx.save();
+    ctx.fillStyle = positive ? getVar('--fill-profit-soft') : getVar('--fill-loss-soft');
+    ctx.beginPath();
+    ctx.moveTo(mapXp(p0.Q), y0);
+    ctx.lineTo(mapXp(p0.Q), mapYp(p0.pi));
+    ctx.lineTo(mapXp(p1.Q), mapYp(p1.pi));
+    ctx.lineTo(mapXp(p1.Q), y0);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  // curva de beneficio: coloreada por tramo (verde si pi>=0, rojo si pi<0),
+  // consistente con la leyenda y con el sombreado de las áreas.
+  const colProfit = getVar('--c-profit'), colLoss = getVar('--c-loss');
+  ctx.save();
+  ctx.lineWidth=2.4; ctx.lineJoin='round'; ctx.lineCap='round';
+  for (let i=0;i<profitPts.length-1;i++){
+    const p0=profitPts[i], p1=profitPts[i+1];
+    const positive = (p0.pi+p1.pi)/2 >= 0;
+    ctx.strokeStyle = positive ? colProfit : colLoss;
+    ctx.beginPath();
+    ctx.moveTo(mapXp(p0.Q), mapYp(p0.pi));
+    ctx.lineTo(mapXp(p1.Q), mapYp(p1.pi));
+    ctx.stroke();
+  }
+  ctx.restore();
+
+  // curvas de beneficio de referencia (K₀ y/o P₀), en color ámbar
+  // punteado, con trazos distintos para diferenciarlas entre sí.
+  const colRef = getVar('--c-ref');
+  function drawRefProfitCurve(pts, dash){
+    ctx.save();
+    ctx.strokeStyle = colRef; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.setLineDash(dash);
+    ctx.beginPath();
+    pts.forEach((pt,i)=>{
+      const x = mapXp(pt.Q), y = mapYp(pt.pi);
+      if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  if (hasRefK) drawRefProfitCurve(ref.profitPtsRefK, [6,3]);
+  if (hasRefP) drawRefProfitCurve(ref.profitPtsRefP, [2,3]);
+  if (hasRefK && ref.choiceRefK && !ref.choiceRefK.shutdown){
+    drawDotAt(ctx, mapXp(ref.choiceRefK.Qstar), mapYp(ref.choiceRefK.profit), colRef);
+  }
+  if (hasRefP && ref.choiceRefP && !ref.choiceRefP.shutdown){
+    drawDotAt(ctx, mapXp(ref.choiceRefP.Qstar), mapYp(ref.choiceRefP.profit), colRef);
+  }
+
+  // marca de Q*
+  const Qstar = choice.shutdown ? 0 : choice.Qstar;
+  const piStar = choice.profit;
+  ctx.save();
+  ctx.strokeStyle = getVar('--c-price'); ctx.setLineDash([5,4]); ctx.lineWidth=1.6;
+  const xStar = mapXp(Qstar);
+  ctx.beginPath(); ctx.moveTo(xStar,rect.y0); ctx.lineTo(xStar,rect.y1); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.restore();
+  drawDotAt(ctx, xStar, mapYp(piStar), getVar('--c-price'));
+
+  ctx.restore(); // fin del recorte al área de trazado
+
+  ctx.save();
+  ctx.fillStyle=getVar('--text-secondary'); ctx.font='12px system-ui,-apple-system,sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+  ctx.fillText('Cantidad (Q)', (rect.x0+rect.x1)/2, rect.y1+28);
+  ctx.restore();
+}
+
+function drawDotAt(ctx,x,y,color){
+  ctx.save();
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(x,y,4.5,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle=getVar('--surface-1'); ctx.lineWidth=1.6; ctx.stroke();
+  ctx.restore();
+}
+
+function getVar(name){
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ============================================================
+   7. LECTURAS NUMÉRICAS
+   ============================================================ */
+
+function renderFirmReadout(cc, market, choice, ref){
+  const box = el('firmReadout');
+  const items = [
+    ['P* (mercado)', market.Peq===null ? '—' : fmt(market.Peq,2)],
+    ['Q*', fmt(choice.Qstar,2)],
+    ['CMe(Q*)', choice.ACstar===null? '—' : fmt(choice.ACstar,2)],
+    ['CMg(Q*)', choice.MCstar===null? '—' : fmt(choice.MCstar,2)],
+    ['Ingreso total', fmt(choice.TR,2)],
+    ['Costo total', fmt(choice.TCstar,2)],
+    ['Beneficio neto (π)', fmt(choice.profit,2)],
+    ['Costo fijo', fmt(cc.FC,2)]
+  ];
+  box.innerHTML = items.map(([k,v])=>
+    `<div class="item"><span class="k">${k}</span><span class="v">${v}</span></div>`
+  ).join('');
+
+  const note = el('firmNote');
+  if (market.Peq===null){
+    note.className='note';
+    note.textContent = 'Sin equilibrio de mercado definido: ajuste las ordenadas de oferta y demanda.';
+  } else if (choice.shutdown){
+    note.className='note shutdown';
+    note.textContent = 'La firma cierra en el corto plazo: al precio vigente, ningún nivel de producción cubre el costo variable; solo se pierde el costo fijo (π = −CF = '+fmt(-cc.FC,2)+').';
+  } else if (choice.cornerAtBound && choice.hardCap){
+    note.className='note';
+    note.textContent = 'Solución de esquina por restricción de capacidad: dado K, esta tecnología no permite producir más de Q ≈ '+fmt(choice.Qstar,2)+' en el corto plazo (el producto marginal del trabajo se anula). La firma opera al límite de su capacidad instalada, y no mediante la igualdad CMg = P* (aquí CMg('+fmt(choice.MCstar,2)+') < P*, pero no puede producir más).';
+  } else if (choice.cornerAtBound && !choice.hardCap){
+    note.className='note';
+    note.textContent = 'Sin óptimo interior dentro del rango explorado: el costo marginal permanece por debajo de P* en todo el dominio graficado (típico de sustitutos perfectos o de una CES muy sustituible). Q* = '+fmt(choice.Qstar,2)+' es solo el límite del rango numérico, no una solución de tangencia CMg = P*; la oferta de la firma no está acotada por esta tecnología.';
+  } else if (choice.profit>=0){
+    note.className='note profit';
+    note.textContent = 'La firma opera con beneficios económicos no negativos en Q* = '+fmt(choice.Qstar,2)+', donde CMg = P*.';
+  } else {
+    note.className='note';
+    note.textContent = 'La firma opera con pérdidas contables pero sigue produciendo (P* > CVMe mínimo), minimizando la pérdida en Q* = '+fmt(choice.Qstar,2)+'.';
+  }
+
+  renderRefCompare(cc, market, choice, ref);
+}
+
+// Compara la elección vigente de la firma contra el o los escenarios de
+// referencia fijados por el usuario (K₀ y/o P₀), reportando los valores
+// de cada escenario y la variación (delta) respecto de la situación actual.
+function fmtDelta(v){
+  if (v===null || v===undefined || !isFinite(v)) return '—';
+  return (v>=0?'+':'−')+fmt(Math.abs(v),2);
+}
+function renderRefCompare(cc, market, choice, ref){
+  const box = el('refCompare');
+  if (!ref || (!ref.cc0 && (ref.refP===null || ref.refP===undefined))){
+    box.style.display='none';
+    box.innerHTML='';
+    return;
+  }
+  box.style.display='';
+  const blocks = [];
+
+  if (ref.cc0){
+    const c0 = ref.choiceRefK;
+    const dQ = (!choice.shutdown && !c0.shutdown) ? choice.Qstar - c0.Qstar : null;
+    const dPi = choice.profit - c0.profit;
+    blocks.push(
+      '<div><strong>Comparación con la referencia de capital (K₀ = '+fmt(state.refK.K,2)+', al precio vigente P* = '+(market.Peq===null?'—':fmt(market.Peq,2))+'):</strong> '+
+      'con K₀, la firma habría elegido Q₀* = '+(c0.shutdown?'0 (cierre)':fmt(c0.Qstar,2))+
+      ', con CMe₀ = '+(c0.ACstar===null?'—':fmt(c0.ACstar,2))+
+      ' y beneficio π₀ = '+fmt(c0.profit,2)+
+      '. Frente a la situación actual (Q* = '+fmt(choice.Qstar,2)+', π = '+fmt(choice.profit,2)+
+      '), el cambio de capital implica ΔQ* = '+(dQ===null?'—':fmtDelta(dQ))+' y Δπ = '+fmtDelta(dPi)+
+      ' respecto del escenario con K₀.</div>'
+    );
+  }
+
+  if (ref.refP!==null && ref.refP!==undefined){
+    const cP = ref.choiceRefP;
+    const dQ = (!choice.shutdown && !cP.shutdown) ? choice.Qstar - cP.Qstar : null;
+    const dPi = choice.profit - cP.profit;
+    blocks.push(
+      '<div><strong>Comparación con la referencia de precio (P₀ = '+fmt(ref.refP,2)+', con la tecnología vigente):</strong> '+
+      'al precio P₀, la firma habría elegido Q₀* = '+(cP.shutdown?'0 (cierre)':fmt(cP.Qstar,2))+
+      ', con beneficio π₀ = '+fmt(cP.profit,2)+
+      '. Al precio actual (P* = '+(market.Peq===null?'—':fmt(market.Peq,2))+', Q* = '+fmt(choice.Qstar,2)+
+      ', π = '+fmt(choice.profit,2)+
+      '), el cambio de precio implica ΔQ* = '+(dQ===null?'—':fmtDelta(dQ))+' y Δπ = '+fmtDelta(dPi)+
+      ' respecto del escenario al precio P₀.</div>'
+    );
+  }
+
+  box.innerHTML = blocks.join('');
+}
+
+function renderMarketReadout(market, ref){
+  const box = el('marketReadout');
+  const items = [
+    ['Q de equilibrio', market.noTrade?'0':fmt(market.Qeq,2)],
+    ['P de equilibrio', market.noTrade?'—':fmt(market.Peq,2)],
+    ['Exc. del consumidor', fmt(market.CS,2)],
+    ['Exc. del productor', fmt(market.PS,2)],
+    ['Excedente total', fmt(market.CS+market.PS,2)],
+    ['|Elasticidad demanda|', market.Ed===null?'—':fmt(Math.abs(market.Ed),2)],
+    ['Elasticidad oferta', market.Es===null?'—':fmt(market.Es,2)]
+  ];
+  box.innerHTML = items.map(([k,v])=>
+    `<div class="item"><span class="k">${k}</span><span class="v">${v}</span></div>`
+  ).join('');
+
+  renderMarketRefCompare(market, ref);
+}
+
+// Compara el equilibrio de mercado vigente contra el equilibrio anterior
+// fijado como referencia (Q₀, P₀ y las curvas de oferta/demanda que lo
+// generaron), reportando el nivel de cada variable en ambos escenarios y
+// la variación (delta) del vigente respecto de la referencia.
+function renderMarketRefCompare(market, ref){
+  const box = el('marketRefCompare');
+  if (!ref || !ref.refMarket){
+    box.style.display='none';
+    box.innerHTML='';
+    return;
+  }
+  box.style.display='';
+  const rm = ref.refMarket;
+  const m0 = computeMarket(rm); // recalcula CS₀, PS₀, elasticidades a partir de la fotografía
+  const dQ = market.noTrade ? null : fmtDelta(market.Qeq - m0.Qeq);
+  const dP = market.noTrade ? null : fmtDelta(market.Peq - m0.Peq);
+  const dCS = fmtDelta(market.CS - m0.CS);
+  const dPS = fmtDelta(market.PS - m0.PS);
+  const dTS = fmtDelta((market.CS+market.PS) - (m0.CS+m0.PS));
+  box.innerHTML =
+    '<strong>Comparación con el equilibrio de referencia (Q₀ = '+fmt(rm.Qeq,2)+', P₀ = '+fmt(rm.Peq,2)+
+    ', curvas: Demanda P = '+fmt(rm.ad,1)+' − '+fmt(rm.bd,2)+'·Q, Oferta P = '+fmt(rm.as_,1)+' + '+fmt(rm.bs,2)+'·Q):</strong> '+
+    'frente al equilibrio vigente ('+(market.noTrade?'sin comercio':'Q* = '+fmt(market.Qeq,2)+', P* = '+fmt(market.Peq,2))+
+    '), el cambio de parámetros implica ΔQ = '+(dQ===null?'—':dQ)+', ΔP = '+(dP===null?'—':dP)+
+    ', ΔExc. del consumidor = '+dCS+', ΔExc. del productor = '+dPS+' y ΔExcedente total = '+dTS+
+    ' respecto de la referencia.';
+}
+
+/* ============================================================
+   8. LAZO PRINCIPAL
+   ============================================================ */
+
+function recomputeAndDraw(){
+  const cc = computeCostCurves(state.prodType, state.paramsByType[state.prodType], state.K, state.w, state.r);
+  const market = computeMarket(state.market);
+  const Pforfirm = market.noTrade ? 0 : market.Peq;
+  const choice = computeFirmChoice(cc, Pforfirm);
+  if (market.noTrade){ choice.shutdown = true; choice.Qstar = 0; choice.TR = 0; choice.TCstar = cc.FC; choice.profit = -cc.FC; choice.ACstar=null; choice.MCstar=null; }
+  const profitPts = computeProfitCurve(cc, Pforfirm);
+
+  // Escenarios de referencia (comparación "antes / después"), cada uno
+  // independiente y opcional:
+  //  - refK: la tecnología/K/w/r vigentes al momento de fijarla, evaluada
+  //    al precio de mercado ACTUAL -> "¿cómo se comportaría la firma si
+  //    el capital siguiera siendo K₀, al precio de hoy?"
+  //  - refP: las curvas de costo ACTUALES, evaluadas al precio fijado en
+  //    su momento -> "¿cómo se comportaría la firma de hoy al precio
+  //    que regía cuando se fijó la referencia?"
+  let ref = { cc0:null, choiceRefK:null, profitPtsRefK:null, refP:null, refMarket:null, choiceRefP:null, profitPtsRefP:null };
+  if (state.refK){
+    const k = state.refK;
+    ref.cc0 = computeCostCurves(k.prodType, k.params, k.K, k.w, k.r);
+    ref.choiceRefK = computeFirmChoice(ref.cc0, Pforfirm);
+    ref.profitPtsRefK = computeProfitCurve(ref.cc0, Pforfirm);
+  }
+  if (state.refP !== null){
+    ref.refMarket = state.refP;       // fotografía completa (curvas + equilibrio)
+    ref.refP = state.refP.Peq;        // atajo numérico usado en el panel de costos
+    ref.choiceRefP = computeFirmChoice(cc, ref.refP);
+    ref.profitPtsRefP = computeProfitCurve(cc, ref.refP);
+  }
+  const anyRef = !!(state.refK || state.refP !== null);
+  el('legendRef').style.display = anyRef ? '' : 'none';
+  el('legendRefProfit').style.display = anyRef ? '' : 'none';
+  el('legendRefMarket').style.display = state.refP!==null ? '' : 'none';
+
+  updateMarketFormula();
+  drawCostPanel(cc, market, choice, ref);
+  drawMarketPanel(market, ref);
+  drawProfitPanel(profitPts, choice, ref);
+  renderFirmReadout(cc, market, choice, ref);
+  renderMarketReadout(market, ref);
+}
+
+window.addEventListener('resize', ()=>{
+  clearTimeout(window._rzT);
+  window._rzT = setTimeout(recomputeAndDraw, 120);
+});
+
+recomputeAndDraw();
+
+})();
+</script>
+</body>
+</html>
